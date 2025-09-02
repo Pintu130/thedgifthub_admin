@@ -60,7 +60,7 @@ export function DashboardHeader() {
   return (
     <div>
       {isLoggingOut && <Loader />}
-      <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-[#FFCCCC] px-4 md:px-6 shadow-sm bg-bgheadersidebar">
+      <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-[#f5bac0] px-4 md:px-6 shadow-sm bg-[#faeaea]">
         {/* Sidebar trigger for mobile */}
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>

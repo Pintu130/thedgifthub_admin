@@ -234,7 +234,7 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
     ))
 
   return (
-    <div className="flex h-full w-full flex-col border-r shadow-lg border-[#FFCCCC] bg-bgheadersidebar">
+    <div className="flex h-full w-full flex-col border-r shadow-lg border-[#f5bac0] bg-[#faeaea]">
       {/* Logo */}
       <Image src="/logo2.png" alt="Logo" className="px-6 py-4 md:hidden flex" width={110} height={110} />
 

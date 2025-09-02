@@ -3,8 +3,8 @@ import { LoginForm } from "@/components/login-form"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "NISBRE2026 - Admin Panel",
-  description: "Login to your admin panel",
+  title: "The Gift Hub - Admin Panel",
+  description: "Login to The Gift Hub admin panel",
 }
 
 export default function LoginPage() {

@@ -14,7 +14,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-[#fff3f3]">
+    <div className="min-h-screen bg-[#fbe6e8]">
       {/* Fixed Header */}
       <div className="fixed top-0 left-0 right-0 z-50">
         <DashboardHeader />
