@@ -1,0 +1,249 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    /* --ring: 221.2 83.2% 53.3%; */
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+
+
+
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-transition-delay: 9999s;
+  transition-delay: 9999s;
+}
+
+
+.loader-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  /* Keep dark background as requested */
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loader-spinner {
+  width: 64px;
+  height: 64px;
+  border: 6px solid transparent;
+
+  /* Use UI theme-based colors */
+  border-top: 6px solid #FFDEDE !important;
+  /* Active sidebar background */
+  border-right: 6px solid #FFF3F3 !important;
+  /* Page background */
+  border-bottom: 6px solid #FFC0CB !important;
+  /* Extra soft pink (customized) */
+  border-left: 6px solid #FFF5F5 !important;
+  /* Sidebar/header background */
+
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+
+  /* Soft glow using red hue */
+  box-shadow: 0 0 15px rgba(163, 0, 0, 0.3);
+}
+
+/* Spinner rotation animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+
+/* Custom Dropdown Menu Item Styles */
+/* Custom Dropdown Menu Item Styles */
+.dropdown-menu-item {
+  background-color: transparent !important;
+  color: #333 !important;
+  padding: 0.5rem 1rem !important;
+  transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out !important;
+}
+
+.dropdown-menu-item:hover {
+  background-color: #F8E6A1 !important;
+  /* Very light yellow-gold */
+  color: #333 !important;
+  /* Keep the text color dark */
+}
+
+/* Disable hover effect on rows/cells */
+.ag-theme-alpine .ag-row-hover .ag-cell,
+.ag-theme-alpine .ag-cell:hover {
+  background-color: inherit !important;
+  color: inherit !important;
+  cursor: default !important;
+}
+
+/* Disable hover effect on headers */
+.ag-theme-alpine .ag-header-cell:hover {
+  background-color: inherit !important;
+  color: inherit !important;
+  cursor: default !important;
+}
+
+/* Link hover inside Link column only */
+.ag-theme-alpine .ag-cell a {
+  color: #2563EB;
+  text-decoration: none;
+}
+
+.ag-theme-alpine .ag-cell a:hover {
+  color: #1D4ED8;
+  text-decoration: underline;
+}
+
+/* Center align header text */
+.ag-header-cell-label {
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+/* Center align Action header */
+.ag-center-header .ag-header-cell-label {
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+
+
+
+/* Example with wrapper class */
+.myGridWrapper :global(.ag-theme-alpine .ag-row-hover .ag-cell),
+.myGridWrapper :global(.ag-theme-alpine .ag-header-cell:hover),
+.myGridWrapper :global(.ag-theme-alpine .ag-cell:hover) {
+  background-color: inherit !important;
+  color: inherit !important;
+  cursor: default !important;
+}
+
+/* bg-[#FFEDED] text-[#800000] */
+
+/* Light theme customization */
+.ag-theme-alpine {
+  --ag-header-background-color: #FFEDED !important;
+  --ag-header-foreground-color: #800000 !important;
+  --ag-border-color: #e5e7eb;
+  --ag-row-hover-color: #f9fafb;
+  --ag-odd-row-background-color: #ffffff !important;
+  --ag-even-row-background-color: #f9fafb;
+
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.ag-root-wrapper {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+
+
+
+
+
+
+
+
+
+/* styles/globals.css or your component CSS file */
+.custom-dropdown-hover:hover {
+  background-color: #FFDEDE !important;
+  color: #A30000 !important;
+}
+
+
+.space-y-4> :not([hidden])~ :not([hidden]) {
+  --tw-space-y-reverse: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+
+/* global.css */
+.scrollbar-custom::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb {
+  background: #f8b6b6;
+  /* Light pink */
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb:hover {
+  width: 6px;
+  /* Appears thinner on hover */
+}
+
+
+
+
+
+
+.prose p {
+    margin-bottom: 0 !important;
+}
+
+
+
+
+.ck-editor__editable_inline {
+  min-height: 200px !important;
+}
+
+
+
+
+ol, ul, menu {
+    margin: 1rem !important;
+    padding: 1rem !important;
+}
+
