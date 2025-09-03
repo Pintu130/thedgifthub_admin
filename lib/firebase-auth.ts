@@ -1,12 +1,12 @@
-import { 
+import {
+  getAuth,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
-  User,
-  UserCredential,
-  getAuth
-} from 'firebase/auth';
-import { app } from './firebase';
+  type User,
+  type UserCredential
+} from "firebase/auth";
+import { app } from "./firebase";
 
 const auth = getAuth(app);
 

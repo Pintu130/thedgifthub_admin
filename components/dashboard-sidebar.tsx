@@ -20,6 +20,7 @@ import {
   LayoutDashboard,
   CreditCard,
   Search,
+  Package,
 } from "lucide-react"
 import Image from "next/image"
 import { useState, useEffect } from "react"
@@ -126,6 +127,13 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
       href: "/seo-management",
       active: pathname === "/seo-management",
     },
+    {
+      label: "Products",              
+      icon: Package,                  
+      href: "/products",              
+      active: pathname === "/products",
+    },
+
   ]
 
   // Admin section routes
