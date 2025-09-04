@@ -57,7 +57,7 @@ export default function Modal({
       <div className="absolute inset-0 bg-black/50" aria-hidden="true" />
 
       {/* Modal Container */}
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-[38rem] mx-4 max-h-[70vh] flex flex-col overflow-hidden z-10">
+      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-[70rem] mx-4 max-h-[80vh] flex flex-col overflow-hidden z-10">
         
         {/* Header (Fixed) */}
         <div className="flex items-center justify-between p-4 border-b border-[#EADFC8]">

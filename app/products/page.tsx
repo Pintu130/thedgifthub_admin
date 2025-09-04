@@ -1,11 +1,11 @@
 import React from 'react'
 import RootLayout from '../RootLayout'
-import ProductsData from '@/components/products/ProductsData'
+import ProductData from '@/components/products/productsdata'
 
 const ProductsPage = () => {
   return (
     <RootLayout>
-      <ProductsData />
+      <ProductData />
     </RootLayout>
   )
 }

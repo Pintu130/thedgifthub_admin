@@ -1,520 +1,386 @@
-"use client";
+"use client"
 
-import { useCallback, useRef, useState, useEffect } from "react";
-import ReactPaginate from "react-paginate";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import Loader from "@/components/loading-screen";
-import { Pencil, Search, Trash2, Plus, Eye } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import Modal from "@/components/common/Modal";
-import ProductForm from "./ProductForm";
-import { Product, ProductFormData, PaginationParams } from "@/lib/types/product";
-import {
-  getProducts,
-  deleteProduct,
-  toggleProductActivity,
-} from "@/lib/services/productService";
+import type React from "react"
+import { useCallback, useState, useEffect } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import Loader from "@/components/loading-screen"
+import { Pencil, Plus, Trash2, Search } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import Modal from "@/components/common/Modal"
+import TableModalProductData from "@/app/products/TableModalProductData"
 
-const ProductsDataTable = () => {
-  const { toast } = useToast();
+export interface Product {
+  id?: string
+  name: string
+  amount: string
+  discount: string
+  availableOffers: string
+  highlights: string
+  images: string[]
+  createdAt?: any
+  updatedAt?: any
+}
 
-  const [searchText, setSearchText] = useState("");
-  const [currentPage, setCurrentPage] = useState(0);
-  const [paginationParams, setPaginationParams] = useState<PaginationParams>({
-    page: 1,
-    limit: 20,
-  });
+interface ProductFormData {
+  id?: string
+  name: string
+  amount: string
+  discount: string
+  availableOffers: string
+  highlights: string
+  images?: File[]
+  imagesPreviews?: string[]
+}
 
-  const [products, setProducts] = useState<Product[]>([]);
-  const [meta, setMeta] = useState({
-    total: 0,
-    page: 1,
-    limit: 20,
-    totalPages: 0,
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [isFetching, setIsFetching] = useState(false);
-  const [isError, setIsError] = useState(false);
+const ProductData = () => {
+  const { toast } = useToast()
+  const [products, setProducts] = useState<Product[]>([])
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [isError, setIsError] = useState(false)
+  const [searchText, setSearchText] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(10)
 
-  // Loading state for individual status updates
-  const [updatingStatusIds, setUpdatingStatusIds] = useState<Set<string>>(new Set());
+  const [isModalVisible, setIsModalVisible] = useState(false)
+  const [formData, setFormData] = useState<ProductFormData>({
+    name: "",
+    amount: "",
+    discount: "",
+    availableOffers: "",
+    highlights: "",
+    images: [],
+    imagesPreviews: [],
+  })
 
-  const [isFormVisible, setIsFormVisible] = useState(false);
-  const [editData, setEditData] = useState<ProductFormData | null>(null);
+  // Delete confirmation modal state
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [productToDelete, setProductToDelete] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const isPaginationClickInProgress = useRef(false);
-  const [isSearching, setIsSearching] = useState(false);
-  const isSearchDisabled = !searchText;
-  const showLoader = isLoading || isFetching || isDeleting || isSearching;
-
-  // Fetch products
   const fetchProducts = useCallback(async () => {
-    setIsFetching(true);
-    setIsError(false);
+    setIsLoading(true)
+    setIsError(false)
     try {
-      const response = await getProducts(paginationParams);
-      setProducts(response.data);
-      setMeta(response.meta);
+      const response = await fetch("/api/products")
+      if (!response.ok) {
+        throw new Error("Failed to fetch products")
+      }
+      const data = await response.json()
+      setProducts(data.products)
+      setFilteredProducts(data.products)
     } catch (error) {
-      console.error("Error fetching products:", error);
-      setIsError(true);
+      console.error("Error fetching products:", error)
+      setIsError(true)
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to load products. Please try again.",
-      });
+        description: "Failed to load products. Please try again later.",
+      })
     } finally {
-      setIsFetching(false);
+      setIsLoading(false)
     }
-  }, [paginationParams, toast]);
+  }, [toast])
 
   useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    fetchProducts()
+  }, [fetchProducts])
 
-  // Handle status toggle
-  const handleStatusToggle = useCallback(
-    async (product: Product) => {
-      const newActivity = product.activity === 1 ? 0 : 1;
-      const productId = product.id!;
-
-      setUpdatingStatusIds((prev) => new Set(prev).add(productId));
-
-      try {
-        await toggleProductActivity(productId, newActivity);
-
-        toast({
-          title: "Success",
-          description: `Product ${newActivity === 1 ? "activated" : "deactivated"} successfully`,
-        });
-
-        fetchProducts();
-      } catch (error: any) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: error.message || "Failed to update status",
-        });
-      } finally {
-        setUpdatingStatusIds((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(productId);
-          return newSet;
-        });
-      }
-    },
-    [toast, fetchProducts]
-  );
-
-  const handleSearch = () => {
-    const newParams: PaginationParams = {
-      ...paginationParams,
-      page: 1,
-      search: searchText || undefined,
-    };
-    setPaginationParams(newParams);
-    setCurrentPage(0);
-  };
-
-  const clearFilters = () => {
-    setSearchText("");
-    setPaginationParams({ page: 1, limit: 20 });
-    setCurrentPage(0);
-  };
-
+  // Filter products based on search text
   useEffect(() => {
-    if (!searchText) {
-      clearFilters();
+    if (!searchText.trim()) {
+      setFilteredProducts(products)
+    } else {
+      const filtered = products.filter(
+        (product) =>
+          product.name.toLowerCase().includes(searchText.toLowerCase()) ||
+          product.amount.toLowerCase().includes(searchText.toLowerCase()) ||
+          product.discount.toLowerCase().includes(searchText.toLowerCase()),
+      )
+      setFilteredProducts(filtered)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchText]);
+    setCurrentPage(1) // Reset to first page when searching
+  }, [searchText, products])
+
+  const onSearchTextChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchText(event.target.value)
+  }
+
+  const toggleModal = useCallback(() => {
+    setFormData({
+      name: "",
+      amount: "",
+      discount: "",
+      availableOffers: "",
+      highlights: "",
+      images: [],
+      imagesPreviews: [],
+    })
+    setIsModalVisible(!isModalVisible)
+  }, [isModalVisible])
 
   const handleEdit = useCallback((product: Product) => {
-    const formData: ProductFormData = {
+    setFormData({
       id: product.id,
-      productName: product.productName,
-      productPrice: product.productPrice,
-      originalPrice: product.originalPrice,
-      discountPercentage: product.discountPercentage,
-      images: [],
-      imageUrls: product.images || [],
+      name: product.name,
+      amount: product.amount,
+      discount: product.discount,
       availableOffers: product.availableOffers,
       highlights: product.highlights,
-      activity: product.activity,
-    };
-    setEditData(formData);
-    setIsFormVisible(true);
-  }, []);
+      images: [],
+      imagesPreviews: product.images, // Set existing image URLs for preview
+    })
+    setIsModalVisible(true)
+  }, [])
 
-  const handleDelete = useCallback((id: string) => {
-    setProductToDelete(id);
-    setIsDeleteModalOpen(true);
-  }, []);
+  // Open delete confirmation modal
+  const handleDelete = useCallback((product: Product) => {
+    setProductToDelete(product)
+    setIsDeleteModalOpen(true)
+  }, [])
 
+  // Close delete confirmation modal
   const closeDeleteModal = useCallback(() => {
-    setIsDeleteModalOpen(false);
-    setProductToDelete(null);
-  }, []);
+    setIsDeleteModalOpen(false)
+    setProductToDelete(null)
+  }, [])
 
   const confirmDelete = useCallback(async () => {
-    if (!productToDelete) return;
-    setIsDeleting(true);
+    if (!productToDelete) return
+
+    setIsDeleting(true)
     try {
-      await deleteProduct(productToDelete);
+      const response = await fetch(`/api/products/${productToDelete.id}`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to delete product")
+      }
+
       toast({
         title: "Success",
         description: "Product deleted successfully",
-      });
-      fetchProducts();
-    } catch (err: any) {
+      })
+      fetchProducts() // Refresh the list
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: err.message || "Failed to delete product",
-      });
+        description: "Failed to delete product",
+      })
     } finally {
-      setIsDeleting(false);
-      closeDeleteModal();
+      setIsDeleting(false)
+      closeDeleteModal()
     }
-  }, [productToDelete, toast, fetchProducts, closeDeleteModal]);
+  }, [productToDelete, toast, fetchProducts, closeDeleteModal])
 
-  const handlePageClick = (event: { selected: number }) => {
-    if (isPaginationClickInProgress.current || isSearching) return;
-    isPaginationClickInProgress.current = true;
-    setIsSearching(true);
-    const newPage = event.selected + 1;
-    setPaginationParams({ ...paginationParams, page: newPage });
-    setCurrentPage(event.selected);
-    setTimeout(() => {
-      setIsSearching(false);
-      isPaginationClickInProgress.current = false;
-    }, 1000);
-  };
+  const refreshGridData = useCallback(() => {
+    fetchProducts()
+  }, [fetchProducts])
 
-  const handleAddProduct = () => {
-    setEditData(null);
-    setIsFormVisible(true);
-  };
+  // Pagination logic
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentProducts = filteredProducts.slice(startIndex, endIndex)
 
-  const handleFormClose = () => {
-    setIsFormVisible(false);
-    setEditData(null);
-  };
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)))
+  }
 
-  const handleFormSuccess = () => {
-    fetchProducts();
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(price);
-  };
-
-  const truncateText = (text: string, maxLength: number = 50) => {
-    const strippedText = text.replace(/<[^>]*>/g, "");
-    return strippedText.length > maxLength
-      ? strippedText.substring(0, maxLength) + "..."
-      : strippedText;
-  };
+  const stripHtml = (html: string) => {
+    const tempDiv = document.createElement("div")
+    tempDiv.innerHTML = html
+    return tempDiv.textContent || tempDiv.innerText || ""
+  }
 
   return (
-    <div className="text-[#333]">
-      {/* Header */}
-      <div className="px-2 mb-6">
-        <h1 className="text-3xl font-bold tracking-tight text-customButton-text">
-          Products Management
-        </h1>
-        <p className="text-sm text-[#7A6C53] mt-1">Manage your products</p>
+    <div className="space-y-4 text-[#333]">
+      <div className="px-2 mb-4">
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Products</h1>
+        <p className="text-sm text-gray-600 mt-1">View, manage, and organize all products and their details here</p>
       </div>
 
-      {/* Card Section */}
-      <Card className="shadow-lg border border-[#EADFC8]">
-        <div className="flex flex-wrap flex-col md:flex-row md:justify-between md:items-center px-7 pt-4 gap-4">
-          <div>
-            <CardHeader className="p-0">
-              <CardTitle className="text-lg text-[#4B3F2F]">
-                All Products
-              </CardTitle>
-              <p className="text-sm text-[#7A6C53] mt-1">
-                {meta.total || 0} total products
-              </p>
-            </CardHeader>
-          </div>
-          <div className="flex flex-wrap gap-2 w-full lg:w-auto lg:flex-nowrap">
-            {/* Add Product Button */}
-            <Button
-              onClick={handleAddProduct}
-              disabled={showLoader}
-              className="bg-gradient-to-r from-customButton-gradientFrom to-customButton-gradientTo text-customButton-text hover:bg-customButton-hoverBg hover:text-customButton-hoverText font-semibold transition w-full sm:w-auto flex items-center justify-center gap-2"
+      <Card className="shadow-md border border-gray-200">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center px-6 pt-4 gap-4">
+          <CardHeader className="p-0">
+            <CardTitle className="text-lg text-gray-800">All Products</CardTitle>
+            <p className="text-sm text-gray-600 mt-1">{filteredProducts.length || 0} total products</p>
+          </CardHeader>
+
+          {/* Search + Add Product */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Search products..."
+                className="border outline-none pl-10 pr-4 py-2 rounded-md shadow-sm w-52 lg:w-64 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                value={searchText}
+                onChange={onSearchTextChange}
+                aria-label="Search products"
+              />
+            </div>
+            <button
+              onClick={toggleModal}
+              className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 font-semibold transition flex items-center gap-2"
+              aria-label="Add new product"
             >
               <Plus size={16} />
               <span>Add Product</span>
-            </Button>
-            <Input
-              type="text"
-              placeholder="Search products..."
-              className="border outline-none p-2 rounded-md shadow-sm w-full sm:flex-1 md:w-48 xl:w-64"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              disabled={showLoader}
-            />
-            <Button
-              onClick={handleSearch}
-              disabled={isSearchDisabled || showLoader}
-              className={`px-4 py-2 rounded-md bg-gradient-to-r 
-                from-customButton-gradientFrom
-                to-customButton-gradientTo
-                text-customButton-text
-                hover:bg-customButton-hoverBg
-                hover:text-customButton-hoverText font-semibold transition w-full sm:w-auto flex items-center justify-center gap-2
-                ${isSearchDisabled || showLoader
-                  ? "opacity-50 cursor-not-allowed"
-                  : ""
-                }`}
-            >
-              <Search size={16} />
-              <span>Search</span>
-            </Button>
-            {searchText && (
-              <Button
-                onClick={clearFilters}
-                disabled={showLoader}
-                className={`px-4 py-2 rounded-md bg-[#FEE2E2] text-[#B91C1C] 
-                  hover:bg-[#FCA5A5] hover:text-[#7F1D1D] border border-[#FCA5A5] 
-                  font-semibold transition w-full sm:w-auto flex items-center justify-center gap-2 
-                  ${showLoader ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
-                <span>Clear</span>
-              </Button>
-            )}
+            </button>
           </div>
         </div>
 
-        <CardContent className="pt-6 relative">
-          {showLoader && <Loader />}
+        <CardContent className="pt-4">
+          {isLoading && <Loader />}
           {isError && (
             <div className="p-4 bg-red-50 text-red-700 rounded-md">
               <p>Failed to load products. Please try again later.</p>
             </div>
           )}
-
-          {products.length > 0 ? (
-            <div className="w-full overflow-x-auto">
-              <div className="inline-block min-w-full align-middle">
-                <div className="overflow-x-auto border border-[#EADFC8] rounded-xl">
-                  <table className="min-w-[1400px] w-full text-sm text-left table-fixed">
-                    <thead className="bg-[#FFEDED] text-[#800000]">
-                      <tr>
-                        <th className="p-3 font-semibold text-center w-[100px]">
-                          Image
-                        </th>
-                        <th className="p-3 font-semibold text-center w-[200px]">
-                          Product Name
-                        </th>
-                        <th className="p-3 font-semibold text-center w-[120px]">
-                          Price
-                        </th>
-                        <th className="p-3 font-semibold text-center w-[120px]">
-                          Original Price
-                        </th>
-                        <th className="p-3 font-semibold text-center w-[100px]">
-                          Discount
-                        </th>
-                        <th className="p-3 font-semibold text-center w-[200px]">
-                          Offers
-                        </th>
-                        <th className="p-3 font-semibold text-center w-[200px]">
-                          Highlights
-                        </th>
-                        <th className="p-3 font-semibold text-center w-[100px]">
-                          Status
-                        </th>
-                        <th className="p-3 font-semibold text-center w-[120px]">
-                          Created Date
-                        </th>
-                        <th className="p-3 font-semibold text-center w-[120px]">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {products.map((product) => (
-                        <tr
-                          key={product.id}
-                          className="border-t border-[#EADFC8] hover:bg-gray-50"
-                        >
-                          <td className="p-3 text-center w-[100px]">
-                            {product.images && product.images.length > 0 ? (
-                              <img
-                                src={product.images[0]}
-                                alt={product.productName}
-                                className="w-16 h-16 object-cover rounded-lg mx-auto"
-                              />
-                            ) : (
-                              <div className="w-16 h-16 bg-gray-200 rounded-lg mx-auto flex items-center justify-center">
-                                <Eye size={20} className="text-gray-400" />
-                              </div>
-                            )}
+          {!isLoading && !isError && (
+            <div className="space-y-4">
+              {/* Custom Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Image
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Amount ($)
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Discount (%)
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Highlights
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {currentProducts.length > 0 ? (
+                      currentProducts.map((product, index) => (
+                        <tr key={product.id || index} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <img
+                              src={product.images?.[0] || "/placeholder.svg?height=40&width=40"}
+                              alt={product.name}
+                              className="w-10 h-10 rounded-sm object-cover"
+                            />
                           </td>
-                          <td className="p-3 text-center text-[#4B3F2F] w-[200px] break-words">
-                            <div className="font-semibold">
-                              {product.productName}
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">${product.amount}</div>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{product.discount}%</div>
+                          </td>
+                          <td className="px-4 py-4">
+                            <div className="text-sm text-gray-700 max-w-xs truncate">
+                              {stripHtml(product.highlights)}
                             </div>
                           </td>
-                          <td className="p-3 text-center text-[#4B3F2F] w-[120px]">
-                            <div className="font-semibold text-green-600">
-                              {formatPrice(product.productPrice)}
-                            </div>
-                          </td>
-                          <td className="p-3 text-center text-[#4B3F2F] w-[120px]">
-                            <div className="text-gray-500 line-through">
-                              {formatPrice(product.originalPrice)}
-                            </div>
-                          </td>
-                          <td className="p-3 text-center text-[#4B3F2F] w-[100px]">
-                            <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">
-                              {product.discountPercentage}% OFF
-                            </span>
-                          </td>
-                          <td className="p-3 text-center text-[#4B3F2F] w-[200px] break-words">
-                            <div className="text-xs">
-                              {truncateText(product.availableOffers)}
-                            </div>
-                          </td>
-                          <td className="p-3 text-center text-[#4B3F2F] w-[200px] break-words">
-                            <div className="text-xs">
-                              {truncateText(product.highlights)}
-                            </div>
-                          </td>
-                          <td className="p-3 text-center text-[#4B3F2F] w-[100px]">
-                            <div className="flex items-center justify-center h-full">
-                              <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={product.activity === 1}
-                                  disabled={updatingStatusIds.has(product.id!)}
-                                  onChange={() => handleStatusToggle(product)}
-                                  className="sr-only peer"
-                                />
-                                <div className="w-11 h-6 bg-[#FFC0C0] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#C70000] peer-focus:ring-opacity-20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-[#FFC0C0] after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#FFB3B3] peer-checked:to-[#C70000] peer-disabled:opacity-50"></div>
-                              </label>
-                            </div>
-                          </td>
-                          <td className="p-3 text-center text-[#4B3F2F] w-[120px]">
-                            <div className="text-xs">
-                              {new Date(product.createdAt).toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              })}
-                            </div>
-                          </td>
-                          <td className="p-3 text-center w-[120px]">
+                          <td className="px-4 py-4 whitespace-nowrap text-center">
                             <div className="flex items-center justify-center gap-2">
-                              <Button
-                                size="sm"
-                                variant="ghost"
+                              <button
                                 onClick={() => handleEdit(product)}
-                                disabled={showLoader}
-                                className="p-1 rounded-full bg-[#EBF5FF] text-[#2563EB] hover:bg-[#DBEAFE] hover:text-[#1D4ED8] transition"
-                                title="Edit Product"
+                                className="p-2 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition"
+                                aria-label="Edit product"
                               >
                                 <Pencil size={16} />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleDelete(product.id!)}
-                                disabled={showLoader}
-                                className="p-1 rounded-full bg-[#F8E6E6] text-[#DC2626] hover:bg-[#FEE2E2] hover:text-[#B91C1C] transition"
-                                title="Delete Product"
+                              </button>
+                              <button
+                                onClick={() => handleDelete(product)}
+                                className="p-2 rounded-full bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition"
+                                aria-label="Delete product"
                               >
                                 <Trash2 size={16} />
-                              </Button>
+                              </button>
                             </div>
                           </td>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Pagination */}
-                <div className="mt-6">
-                  {meta.totalPages > 1 && (
-                    <div className="flex justify-center">
-                      <ReactPaginate
-                        previousLabel={"←"}
-                        nextLabel={"→"}
-                        breakLabel={"..."}
-                        pageCount={meta.totalPages}
-                        marginPagesDisplayed={2}
-                        pageRangeDisplayed={5}
-                        onPageChange={handlePageClick}
-                        containerClassName={"pagination flex gap-2"}
-                        pageClassName={
-                          "border border-[#EADFC8] bg-white rounded cursor-pointer"
-                        }
-                        previousClassName={
-                          "border border-[#EADFC8] bg-white rounded cursor-pointer"
-                        }
-                        nextClassName={
-                          "border border-[#EADFC8] bg-white rounded cursor-pointer"
-                        }
-                        breakClassName={
-                          "border border-[#EADFC8] bg-white rounded cursor-pointer"
-                        }
-                        pageLinkClassName={"block px-3 py-1 w-full h-full"}
-                        previousLinkClassName={"block px-3 py-1 w-full h-full"}
-                        nextLinkClassName={"block px-3 py-1 w-full h-full"}
-                        breakLinkClassName={"block px-3 py-1 w-full h-full"}
-                        activeClassName={
-                          "bg-gradient-to-r from-customButton-gradientFrom to-customButton-gradientTo text-customButton-text"
-                        }
-                        disabledClassName={"opacity-50 cursor-not-allowed"}
-                        forcePage={currentPage}
-                      />
-                    </div>
-                  )}
-                </div>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                          {searchText ? "No products found matching your search." : "No products available."}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <div className="text-gray-500 text-center">
-                  <h3 className="text-lg font-medium mb-2">No products found</h3>
-                  <p className="text-sm">
-                    There are no products to display at the moment.
-                  </p>
-                  <Button
-                    onClick={handleAddProduct}
-                    className="mt-4 bg-gradient-to-r from-customButton-gradientFrom to-customButton-gradientTo text-customButton-text"
-                  >
-                    <Plus size={16} className="mr-2" />
-                    Add Your First Product
-                  </Button>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200">
+                  <div className="flex items-center text-sm text-gray-700">
+                    Showing {startIndex + 1} to {Math.min(endIndex, filteredProducts.length)} of{" "}
+                    {filteredProducts.length} results
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => goToPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      const pageNum = i + 1
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => goToPage(pageNum)}
+                          className={`px-3 py-1 text-sm border rounded-md ${
+                            currentPage === pageNum
+                              ? "bg-blue-600 text-white border-blue-600"
+                              : "border-gray-300 hover:bg-gray-50"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      )
+                    })}
+
+                    <button
+                      onClick={() => goToPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>
 
       {/* Product Form Modal */}
-      <ProductForm
-        isOpen={isFormVisible}
-        onClose={handleFormClose}
-        onSuccess={handleFormSuccess}
-        editData={editData}
+      <TableModalProductData
+        isModalVisible={isModalVisible}
+        onClose={toggleModal}
+        title={formData.id ? "Edit Product" : "Add Product"}
+        closeLabel="Cancel"
+        saveLabel={formData.id ? "Update" : "Save"}
+        formData={formData}
+        setFormData={setFormData}
+        getTotalProducts={refreshGridData}
       />
 
       {/* Delete Confirmation Modal */}
@@ -529,7 +395,7 @@ const ProductsDataTable = () => {
         isLoading={isDeleting}
       />
     </div>
-  );
-};
+  )
+}
 
-export default ProductsDataTable;
+export default ProductData
