@@ -9,15 +9,19 @@ import { useToast } from "@/hooks/use-toast"
 import { X, Plus } from "lucide-react"
 import AdvancedCKEditor from "@/components/common/advanced-ckeditor"
 
-interface ProductFormData {
+export interface ProductFormData {
   id?: string
   name: string
   amount: string
   discount: string
   availableOffers: string
   highlights: string
-  images?: File[]
-  imagesPreviews?: string[]
+  images: Array<File | string>
+  imagesPreviews: string[]
+  productPrice: number
+  originalPrice: number
+  discountPercentage: number
+  activity: number
 }
 
 interface FormErrors {
@@ -36,7 +40,7 @@ interface Props {
   closeLabel: string
   saveLabel: string
   formData: ProductFormData
-  setFormData: (data: ProductFormData) => void
+  setFormData: React.Dispatch<React.SetStateAction<ProductFormData>>
   getTotalProducts: () => void
 }
 
@@ -86,24 +90,20 @@ export default function TableModalProductData({
   }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return
+    if (!e.target.files) return
 
     const files = Array.from(e.target.files)
+    const currentImages = Array.isArray(formData.images) ? formData.images : []
     const validFiles: File[] = []
     const newPreviews: string[] = []
-    const currentImages = formData.images || []
-
-    if (currentImages.length >= 4) {
-      toast({
-        variant: "destructive",
-        title: "Maximum images reached",
-        description: "You can upload maximum 4 images.",
-      })
-      return
-    }
 
     files.forEach((file) => {
       if (currentImages.length + validFiles.length >= 4) {
+        toast({
+          variant: "destructive",
+          title: "Maximum images reached",
+          description: "You can upload up to 4 images.",
+        })
         return
       }
 
@@ -130,16 +130,17 @@ export default function TableModalProductData({
     })
 
     if (validFiles.length > 0) {
-      const currentPreviews = formData.imagesPreviews || []
-
-      setFormData({
-        ...formData,
-        images: [...currentImages, ...validFiles],
-        imagesPreviews: [...currentPreviews, ...newPreviews],
+      setFormData(prev => {
+        const currentPreviews = Array.isArray(prev.imagesPreviews) ? prev.imagesPreviews : []
+        return {
+          ...prev,
+          images: [...currentImages, ...validFiles],
+          imagesPreviews: [...currentPreviews, ...newPreviews],
+        }
       })
 
       if (errors.images) {
-        setErrors((prev) => ({ ...prev, images: undefined }))
+        setErrors(prev => ({ ...prev, images: undefined }))
       }
     }
 
@@ -149,20 +150,25 @@ export default function TableModalProductData({
   }
 
   const removeImage = (index: number) => {
-    const currentImages = formData.images || []
-    const currentPreviews = formData.imagesPreviews || []
+    setFormData(prev => {
+      const currentImages: Array<File | string> = Array.isArray(prev.images) ? [...prev.images] : []
+      const currentPreviews = Array.isArray(prev.imagesPreviews) ? [...prev.imagesPreviews] : []
 
-    if (currentPreviews[index]?.startsWith("blob:")) {
-      URL.revokeObjectURL(currentPreviews[index])
-    }
+      if (currentPreviews[index]?.startsWith("blob:")) {
+        URL.revokeObjectURL(currentPreviews[index])
+      }
 
-    const newImages = currentImages.filter((_, i) => i !== index)
-    const newPreviews = currentPreviews.filter((_, i) => i !== index)
+      // Create new arrays without the item at the specified index
+      const newImages = [...currentImages]
+      const newPreviews = [...currentPreviews]
+      newImages.splice(index, 1)
+      newPreviews.splice(index, 1)
 
-    setFormData({
-      ...formData,
-      images: newImages,
-      imagesPreviews: newPreviews,
+      return {
+        ...prev,
+        images: newImages,
+        imagesPreviews: newPreviews,
+      }
     })
   }
 
@@ -239,47 +245,50 @@ export default function TableModalProductData({
 
     try {
       const formDataToSend = new FormData()
+      const productData = {
+        productName: formData.name,
+        productPrice: parseFloat(formData.amount) || 0,
+        originalPrice: parseFloat(formData.amount) || 0,
+        discountPercentage: parseFloat(formData.discount) || 0,
+        availableOffers: formData.availableOffers,
+        highlights: formData.highlights,
+        activity: 1,
+        images: formData.imagesPreviews?.filter(url => !url.startsWith('blob:')) || []
+      }
 
-      // Add product data
-      formDataToSend.append("name", formData.name)
-      formDataToSend.append("amount", formData.amount)
-      formDataToSend.append("discount", formData.discount || "")
-      formDataToSend.append("availableOffers", formData.availableOffers || "")
-      formDataToSend.append("highlights", formData.highlights || "")
+      // Append all fields
+      Object.entries(productData).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          value.forEach((item, index) => {
+            formDataToSend.append(`${key}[${index}]`, item)
+          })
+        } else if (value !== null && value !== undefined) {
+          formDataToSend.append(key, value.toString())
+        }
+      })
 
-      // Add images
+      // Add new image files
       if (formData.images) {
-        formData.images.forEach((image, index) => {
-          formDataToSend.append(`image${index}`, image)
+        formData.images.forEach((file) => {
+          if (file instanceof File) {
+            formDataToSend.append('images', file)
+          }
         })
       }
 
       let response: Response
+      let url = '/api/products'
+      let method = 'POST'
 
-      if (isEditing) {
-        // Add existing images for update
-        if (formData.imagesPreviews) {
-          const existingImages = formData.imagesPreviews.filter((url) => !url.startsWith("blob:"))
-          formDataToSend.append("existingImages", JSON.stringify(existingImages))
-        }
-
-        // Add new images for update
-        if (formData.images) {
-          formData.images.forEach((image, index) => {
-            formDataToSend.append(`newImage${index}`, image)
-          })
-        }
-
-        response = await fetch(`/api/products/${formData.id}`, {
-          method: "PUT",
-          body: formDataToSend,
-        })
-      } else {
-        response = await fetch("/api/products", {
-          method: "POST",
-          body: formDataToSend,
-        })
+      if (isEditing && formData.id) {
+        url = `/api/products/${formData.id}`
+        method = 'PATCH'
       }
+
+      response = await fetch(url, {
+        method,
+        body: formDataToSend,
+      })
 
       if (!response.ok) {
         const errorData = await response.json()

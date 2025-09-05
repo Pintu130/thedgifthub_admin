@@ -1,113 +1,108 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { doc, updateDoc, deleteDoc, getDoc, serverTimestamp } from "firebase/firestore"
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage"
-import { db, storage } from "@/lib/firebase"
+import { NextResponse } from 'next/server';
+import { getProductById, updateProduct, deleteProduct } from '@/lib/services/productService';
 
-// PUT - Update product
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+// GET /api/products/[id]
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = params
-    const formData = await request.formData()
-
-    // Extract product data
-    const name = formData.get("name") as string
-    const amount = formData.get("amount") as string
-    const discount = formData.get("discount") as string
-    const availableOffers = formData.get("availableOffers") as string
-    const highlights = formData.get("highlights") as string
-    const existingImages = formData.get("existingImages") as string
-
-    // Parse existing images
-    let imageUrls: string[] = []
-    if (existingImages) {
-      try {
-        imageUrls = JSON.parse(existingImages)
-      } catch (e) {
-        imageUrls = []
-      }
+    const product = await getProductById(params.id);
+    if (!product) {
+      return NextResponse.json(
+        { error: 'Product not found' },
+        { status: 404 }
+      );
     }
-
-    // Extract new images
-    const newImages: File[] = []
-    for (const [key, value] of formData.entries()) {
-      if (key.startsWith("newImage") && value instanceof File) {
-        newImages.push(value)
-      }
-    }
-
-    // Upload new images if provided
-    if (newImages.length > 0) {
-      for (let i = 0; i < newImages.length; i++) {
-        const image = newImages[i]
-        const timestamp = Date.now()
-        const fileName = `products/${timestamp}_${i}_${image.name}`
-        const storageRef = ref(storage, fileName)
-
-        const snapshot = await uploadBytes(storageRef, image)
-        const downloadURL = await getDownloadURL(snapshot.ref)
-        imageUrls.push(downloadURL)
-      }
-    }
-
-    // Validate image count
-    if (imageUrls.length < 2 || imageUrls.length > 4) {
-      return NextResponse.json({ error: "Product must have 2-4 images" }, { status: 400 })
-    }
-
-    // Update product document
-    const productRef = doc(db, "products", id)
-    await updateDoc(productRef, {
-      name,
-      amount,
-      discount: discount || "",
-      availableOffers: availableOffers || "",
-      highlights: highlights || "",
-      images: imageUrls,
-      updatedAt: serverTimestamp(),
-    })
-
-    return NextResponse.json({ message: "Product updated successfully" }, { status: 200 })
+    return NextResponse.json(product);
   } catch (error) {
-    console.error("Error updating product:", error)
-    return NextResponse.json({ error: "Failed to update product" }, { status: 500 })
+    console.error('Error fetching product:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch product' },
+      { status: 500 }
+    );
   }
 }
 
-// DELETE - Delete product
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+// PATCH /api/products/[id]
+export async function PATCH(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = params
+    const formData = await request.formData();
+    
+    // Extract text fields
+    const productData: any = {
+      productName: formData.get('productName') as string,
+      productPrice: parseFloat(formData.get('productPrice') as string) || 0,
+      originalPrice: parseFloat(formData.get('originalPrice') as string) || 0,
+      discountPercentage: parseFloat(formData.get('discountPercentage') as string) || 0,
+      availableOffers: formData.get('availableOffers') as string || '',
+      highlights: formData.get('highlights') as string || '',
+      activity: 1,
+    };
 
-    // Get product data to access image URLs
-    const productRef = doc(db, "products", id)
-    const productSnap = await getDoc(productRef)
-
-    if (!productSnap.exists()) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 })
+    // Handle existing images
+    const existingImages = formData.getAll('images') as string[];
+    if (existingImages && existingImages.length > 0) {
+      productData.images = existingImages;
     }
 
-    const productData = productSnap.data()
-    const imageUrls = productData.images || []
-
-    // Delete images from storage
-    if (imageUrls.length > 0) {
-      const deletePromises = imageUrls.map(async (url: string) => {
-        try {
-          const imageRef = ref(storage, url)
-          await deleteObject(imageRef)
-        } catch (error) {
-          console.warn("Failed to delete image:", url, error)
-        }
-      })
-      await Promise.all(deletePromises)
+    // Handle new image uploads
+    const imageFiles = formData.getAll('images') as File[];
+    if (imageFiles && imageFiles.length > 0) {
+      productData.images = [...(productData.images || []), ...imageFiles];
     }
 
-    // Delete product document
-    await deleteDoc(productRef)
-
-    return NextResponse.json({ message: "Product deleted successfully" }, { status: 200 })
+    await updateProduct(params.id, productData);
+    
+    return NextResponse.json({ 
+      success: true,
+      message: 'Product updated successfully' 
+    });
   } catch (error) {
-    console.error("Error deleting product:", error)
-    return NextResponse.json({ error: "Failed to delete product" }, { status: 500 })
+    console.error('Error updating product:', error);
+    return NextResponse.json(
+      { 
+        success: false,
+        error: 'Failed to update product',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/products/[id]
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const product = await getProductById(params.id);
+    if (!product) {
+      return NextResponse.json(
+        { success: false, error: 'Product not found' },
+        { status: 404 }
+      );
+    }
+
+    await deleteProduct(params.id);
+    
+    return NextResponse.json({ 
+      success: true,
+      message: 'Product deleted successfully' 
+    });
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    return NextResponse.json(
+      { 
+        success: false,
+        error: 'Failed to delete product',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
   }
 }

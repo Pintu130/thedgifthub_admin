@@ -9,27 +9,21 @@ import { useToast } from "@/hooks/use-toast"
 import Modal from "@/components/common/Modal"
 import TableModalProductData from "@/app/products/TableModalProductData"
 
-export interface Product {
-  id?: string
-  name: string
-  amount: string
-  discount: string
-  availableOffers: string
-  highlights: string
-  images: string[]
-  createdAt?: any
-  updatedAt?: any
-}
+import type { Product } from "@/lib/types/product"
 
-interface ProductFormData {
+export interface ProductFormData {
   id?: string
   name: string
   amount: string
   discount: string
   availableOffers: string
   highlights: string
-  images?: File[]
-  imagesPreviews?: string[]
+  images: Array<File | string>
+  imagesPreviews: string[]
+  productPrice: number
+  originalPrice: number
+  discountPercentage: number
+  activity: number
 }
 
 const ProductData = () => {
@@ -51,6 +45,10 @@ const ProductData = () => {
     highlights: "",
     images: [],
     imagesPreviews: [],
+    productPrice: 0,
+    originalPrice: 0,
+    discountPercentage: 0,
+    activity: 1
   })
 
   // Delete confirmation modal state
@@ -62,16 +60,20 @@ const ProductData = () => {
     setIsLoading(true)
     setIsError(false)
     try {
-      const response = await fetch("/api/products")
+      const response = await fetch(
+        `/api/products?page=${currentPage}&limit=${itemsPerPage}${searchText ? `&search=${encodeURIComponent(searchText)}` : ''}`
+      )
       if (!response.ok) {
         throw new Error("Failed to fetch products")
       }
-      const data = await response.json()
-      setProducts(data.products)
-      setFilteredProducts(data.products)
+      const { data, pagination } = await response.json()
+      setProducts(data || [])
+      setFilteredProducts(data || [])
     } catch (error) {
       console.error("Error fetching products:", error)
       setIsError(true)
+      setProducts([])
+      setFilteredProducts([])
       toast({
         variant: "destructive",
         title: "Error",
@@ -80,7 +82,7 @@ const ProductData = () => {
     } finally {
       setIsLoading(false)
     }
-  }, [toast])
+  }, [currentPage, itemsPerPage, searchText, toast])
 
   useEffect(() => {
     fetchProducts()
@@ -91,15 +93,20 @@ const ProductData = () => {
     if (!searchText.trim()) {
       setFilteredProducts(products)
     } else {
+      const searchLower = searchText.toLowerCase()
       const filtered = products.filter(
         (product) =>
-          product.name.toLowerCase().includes(searchText.toLowerCase()) ||
-          product.amount.toLowerCase().includes(searchText.toLowerCase()) ||
-          product.discount.toLowerCase().includes(searchText.toLowerCase()),
+          (product.productName?.toLowerCase() || '').includes(searchLower) ||
+          (product.productPrice?.toString() || '').includes(searchText) ||
+          (product.originalPrice?.toString() || '').includes(searchText) ||
+          (product.discountPercentage?.toString() || '').includes(searchText) ||
+          (product.availableOffers?.toLowerCase() || '').includes(searchLower) ||
+          (product.highlights?.toLowerCase() || '').includes(searchLower)
       )
       setFilteredProducts(filtered)
     }
-    setCurrentPage(1) // Reset to first page when searching
+    // Reset to first page when search changes
+    setCurrentPage(1)
   }, [searchText, products])
 
   const onSearchTextChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,20 +122,29 @@ const ProductData = () => {
       highlights: "",
       images: [],
       imagesPreviews: [],
+      productPrice: 0,
+      originalPrice: 0,
+      discountPercentage: 0,
+      activity: 1
     })
     setIsModalVisible(!isModalVisible)
   }, [isModalVisible])
 
+  // Handle edit product
   const handleEdit = useCallback((product: Product) => {
     setFormData({
       id: product.id,
-      name: product.name,
-      amount: product.amount,
-      discount: product.discount,
-      availableOffers: product.availableOffers,
-      highlights: product.highlights,
-      images: [],
-      imagesPreviews: product.images, // Set existing image URLs for preview
+      name: product.productName || '',
+      amount: product.productPrice?.toString() || '0',
+      discount: product.discountPercentage?.toString() || '0',
+      availableOffers: product.availableOffers || '',
+      highlights: product.highlights || '',
+      images: product.images || [],
+      imagesPreviews: Array.isArray(product.images) ? product.images : [],
+      productPrice: product.productPrice || 0,
+      originalPrice: product.originalPrice || 0,
+      discountPercentage: product.discountPercentage || 0,
+      activity: product.activity || 1,
     })
     setIsModalVisible(true)
   }, [])
@@ -145,35 +161,38 @@ const ProductData = () => {
     setProductToDelete(null)
   }, [])
 
-  const confirmDelete = useCallback(async () => {
-    if (!productToDelete) return
-
+  // Handle delete product
+  const confirmDelete = async () => {
+    if (!productToDelete?.id) return
+    
     setIsDeleting(true)
     try {
       const response = await fetch(`/api/products/${productToDelete.id}`, {
-        method: "DELETE",
+        method: 'DELETE',
       })
-
+      
       if (!response.ok) {
-        throw new Error("Failed to delete product")
+        throw new Error('Failed to delete product')
       }
-
+      
       toast({
         title: "Success",
         description: "Product deleted successfully",
       })
-      fetchProducts() // Refresh the list
-    } catch (error: any) {
+      
+      fetchProducts()
+      closeDeleteModal()
+    } catch (error) {
+      console.error("Error deleting product:", error)
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to delete product",
+        description: "Failed to delete product. Please try again.",
       })
     } finally {
       setIsDeleting(false)
-      closeDeleteModal()
     }
-  }, [productToDelete, toast, fetchProducts, closeDeleteModal])
+  }
 
   const refreshGridData = useCallback(() => {
     fetchProducts()
@@ -185,19 +204,27 @@ const ProductData = () => {
   const endIndex = startIndex + itemsPerPage
   const currentProducts = filteredProducts.slice(startIndex, endIndex)
 
-  const goToPage = (page: number) => {
+  // Go to specific page
+  const goToPage = useCallback((page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)))
-  }
+  }, [totalPages])
 
-  const stripHtml = (html: string) => {
+  const stripHtml = (html: string | undefined): string => {
+    if (!html) return ''
     const tempDiv = document.createElement("div")
     tempDiv.innerHTML = html
     return tempDiv.textContent || tempDiv.innerText || ""
   }
 
+  // Format price with 2 decimal places
+  const formatPrice = (price?: number): string => {
+    if (price === undefined || price === null) return '0.00'
+    return price.toFixed(2)
+  }
+
   return (
-    <div className="space-y-4 text-[#333]">
-      <div className="px-2 mb-4">
+    <div className="space-y-4 text-[#333] p-4">
+      <div className="mb-6">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900">Products</h1>
         <p className="text-sm text-gray-600 mt-1">View, manage, and organize all products and their details here</p>
       </div>
@@ -227,7 +254,7 @@ const ProductData = () => {
               className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 font-semibold transition flex items-center gap-2"
               aria-label="Add new product"
             >
-              <Plus size={16} />
+              <Plus size={16} /> 
               <span>Add Product</span>
             </button>
           </div>
@@ -247,22 +274,22 @@ const ProductData = () => {
                 <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-200">
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Image
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Name
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Product Name
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Amount ($)
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Price ($)
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Discount (%)
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Highlights
                       </th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
@@ -271,25 +298,49 @@ const ProductData = () => {
                     {currentProducts.length > 0 ? (
                       currentProducts.map((product, index) => (
                         <tr key={product.id || index} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-4 py-4 whitespace-nowrap">
+                          <td className="px-6 py-4 whitespace-nowrap">
                             <img
-                              src={product.images?.[0] || "/placeholder.svg?height=40&width=40"}
-                              alt={product.name}
-                              className="w-10 h-10 rounded-sm object-cover"
+                              src={Array.isArray(product.images) && product.images.length > 0 
+                                ? product.images[0] 
+                                : "/placeholder.svg?height=40&width=40"}
+                              alt={product.productName || 'Product Image'}
+                              className="w-12 h-12 rounded-md object-cover border border-gray-200"
+                              onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                                const target = e.target as HTMLImageElement
+                                target.src = "/placeholder.svg?height=40&width=40"
+                              }}
                             />
                           </td>
-                          <td className="px-4 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {product.productName || 'No Name'}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              ID: {product.id || 'N/A'}
+                            </div>
                           </td>
-                          <td className="px-4 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">${product.amount}</div>
+                          <td className="px-6 py-4 whitespace-nowrap text-right">
+                            <div className="text-sm font-medium text-gray-900">
+                              ${formatPrice(product.productPrice)}
+                            </div>
+                            {product.originalPrice && product.originalPrice > product.productPrice && (
+                              <div className="text-xs text-gray-500 line-through">
+                                ${formatPrice(product.originalPrice)}
+                              </div>
+                            )}
                           </td>
-                          <td className="px-4 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{product.discount}%</div>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              product.discountPercentage && product.discountPercentage > 0 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {product.discountPercentage || 0}%
+                            </span>
                           </td>
-                          <td className="px-4 py-4">
-                            <div className="text-sm text-gray-700 max-w-xs truncate">
-                              {stripHtml(product.highlights)}
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-gray-700 max-w-xs line-clamp-2">
+                              {product.highlights ? stripHtml(product.highlights) : 'No highlights'}
                             </div>
                           </td>
                           <td className="px-4 py-4 whitespace-nowrap text-center">
