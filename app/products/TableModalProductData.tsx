@@ -12,17 +12,17 @@ import AdvancedCKEditor from "@/components/common/advanced-ckeditor"
 export interface ProductFormData {
   id?: string
   name: string
-  amount: string
-  discount: string
+  amount: string        // string because it comes from input
+  discount: string      // string because it comes from input
+  originalPrice: string // 👈 change from number → string
   availableOffers: string
   highlights: string
   images: Array<File | string>
   imagesPreviews: string[]
   productPrice: number
-  originalPrice: number
   discountPercentage: number
-  activity: number
 }
+
 
 interface FormErrors {
   name?: string
@@ -248,11 +248,10 @@ export default function TableModalProductData({
       const productData = {
         productName: formData.name,
         productPrice: parseFloat(formData.amount) || 0,
-        originalPrice: parseFloat(formData.amount) || 0,
+        originalPrice: parseFloat(formData.originalPrice) || 0,
         discountPercentage: parseFloat(formData.discount) || 0,
         availableOffers: formData.availableOffers,
         highlights: formData.highlights,
-        activity: 1,
         images: formData.imagesPreviews?.filter(url => !url.startsWith('blob:')) || []
       }
 
@@ -344,6 +343,7 @@ export default function TableModalProductData({
       closeLabel={closeLabel}
       confirmLabel={saveLabel}
       isLoading={isSubmitting}
+      width="70rem"
     >
       {isSubmitting && <Loader />}
 
@@ -357,11 +357,9 @@ export default function TableModalProductData({
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div
-                  className={`border ${
-                    errors.images ? "border-red-500" : "border-gray-300 border-dashed"
-                  } rounded-lg p-6 hover:bg-gray-50 transition cursor-pointer flex flex-col items-center justify-center min-h-[200px] ${
-                    formData.images && formData.images.length >= 4 ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
+                  className={`border ${errors.images ? "border-red-500" : "border-gray-300 border-dashed"
+                    } rounded-lg p-6 hover:bg-gray-50 transition cursor-pointer flex flex-col items-center justify-center min-h-[200px] ${formData.images && formData.images.length >= 4 ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                   onClick={formData.images && formData.images.length >= 4 ? undefined : triggerImageUpload}
                 >
                   <input
@@ -419,7 +417,7 @@ export default function TableModalProductData({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <FormInput
               label="Product Name"
               name="name"
@@ -431,8 +429,18 @@ export default function TableModalProductData({
             />
 
             <FormInput
+              label="Original Price ($)"
+              type="number"
+              name="originalPrice"
+              value={formData.originalPrice?.toString() || ""}
+              onChange={handleChange}
+              placeholder="e.g. 35.00"
+            />
+
+            <FormInput
               label="Amount ($)"
               name="amount"
+              type="number"
               value={formData.amount || ""}
               onChange={handleChange}
               placeholder="e.g. 26.99"
@@ -443,6 +451,7 @@ export default function TableModalProductData({
             <FormInput
               label="Discount (%)"
               name="discount"
+              type="number"
               value={formData.discount || ""}
               onChange={handleChange}
               placeholder="e.g. 10"
@@ -450,7 +459,7 @@ export default function TableModalProductData({
               error={errors.discount}
             />
 
-   
+
           </div>
 
           <div className="space-y-2">

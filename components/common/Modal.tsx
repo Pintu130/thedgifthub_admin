@@ -14,6 +14,7 @@ interface ModalProps {
   closeLabel?: string
   confirmLabel?: string
   isLoading?: boolean
+  width?: string // ✅ new prop for dynamic width (e.g. "50rem", "600px", "80%")
 }
 
 export default function Modal({
@@ -26,6 +27,7 @@ export default function Modal({
   closeLabel = "Cancel",
   confirmLabel = "Confirm",
   isLoading = false,
+  width = "35rem", // ✅ default width
 }: ModalProps) {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -57,9 +59,11 @@ export default function Modal({
       <div className="absolute inset-0 bg-black/50" aria-hidden="true" />
 
       {/* Modal Container */}
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-[70rem] mx-4 max-h-[80vh] flex flex-col overflow-hidden z-10">
-        
-        {/* Header (Fixed) */}
+      <div
+        className="relative bg-white rounded-2xl shadow-xl mx-4 max-h-[80vh] flex flex-col overflow-hidden z-10"
+        style={{ width }} // ✅ dynamic width
+      >
+        {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[#EADFC8]">
           <h3 className="text-lg font-semibold text-[#4B3F2F]">{title}</h3>
           <button
@@ -71,13 +75,13 @@ export default function Modal({
           </button>
         </div>
 
-        {/* Body (Scrollable) */}
+        {/* Body */}
         <div className="p-4 overflow-y-auto scrollbar-custom flex-1">
           {message && <p className="text-[#4B3F2F] mb-4">{message}</p>}
           {children}
         </div>
 
-        {/* Footer (Fixed) */}
+        {/* Footer */}
         <div className="flex justify-end gap-2 p-4 border-t border-[#EADFC8]">
           <button
             onClick={onClose}
