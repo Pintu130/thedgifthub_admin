@@ -1,41 +1,39 @@
 "use client"
 
 import type React from "react"
-import { useCallback, useState, useEffect } from "react"
+import { useCallback, useRef, useState, useEffect } from "react"
+import { AgGridReact } from "ag-grid-react"
+import "ag-grid-community/styles/ag-grid.css"
+import "ag-grid-community/styles/ag-theme-alpine.css"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Loader from "@/components/loading-screen"
-import { Pencil, Plus, Trash2, Search } from "lucide-react"
+import { Eye, Pencil, Plus, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Modal from "@/components/common/Modal"
 import TableModalProductData from "@/app/products/TableModalProductData"
-
+import type { ColDef } from "ag-grid-community"
 import type { Product } from "@/lib/types/product"
 
 export interface ProductFormData {
   id?: string
   name: string
-  amount: string
-  discount: string
+  amount: string              // input → string
+  discount: string            // input → string
+  originalPrice: string       // 👈 input → string
   availableOffers: string
   highlights: string
   images: Array<File | string>
   imagesPreviews: string[]
-  productPrice: number
-  originalPrice: number
-  discountPercentage: number
-  activity: number
+  productPrice: number        // computed / saved as number
+  discountPercentage: number  // computed / saved as number
 }
 
 const ProductData = () => {
   const { toast } = useToast()
   const [products, setProducts] = useState<Product[]>([])
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isError, setIsError] = useState(false)
   const [searchText, setSearchText] = useState("")
-  const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage] = useState(10)
-
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [formData, setFormData] = useState<ProductFormData>({
     name: "",
@@ -46,34 +44,36 @@ const ProductData = () => {
     images: [],
     imagesPreviews: [],
     productPrice: 0,
-    originalPrice: 0,
+    originalPrice: "",
     discountPercentage: 0,
-    activity: 1
   })
 
   // Delete confirmation modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [productToDelete, setProductToDelete] = useState<Product | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false)
+  const [viewProduct, setViewProduct] = useState<Product | null>(null)
+  console.log("🚀 ~ ProductData ~ viewProduct:", viewProduct)
 
+
+  const gridRef = useRef<AgGridReact | null>(null)
+  const [paginationPageSize] = useState(10)
+  const [gridApi, setGridApi] = useState<any>(null)
+
+  // ✅ Fetch products
   const fetchProducts = useCallback(async () => {
     setIsLoading(true)
     setIsError(false)
     try {
-      const response = await fetch(
-        `/api/products?page=${currentPage}&limit=${itemsPerPage}${searchText ? `&search=${encodeURIComponent(searchText)}` : ''}`
-      )
-      if (!response.ok) {
-        throw new Error("Failed to fetch products")
-      }
-      const { data, pagination } = await response.json()
+      const response = await fetch(`/api/products`)
+      if (!response.ok) throw new Error("Failed to fetch products")
+      const { data } = await response.json()
       setProducts(data || [])
-      setFilteredProducts(data || [])
     } catch (error) {
       console.error("Error fetching products:", error)
       setIsError(true)
       setProducts([])
-      setFilteredProducts([])
       toast({
         variant: "destructive",
         title: "Error",
@@ -82,37 +82,23 @@ const ProductData = () => {
     } finally {
       setIsLoading(false)
     }
-  }, [currentPage, itemsPerPage, searchText, toast])
+  }, [toast])
 
   useEffect(() => {
     fetchProducts()
   }, [fetchProducts])
 
-  // Filter products based on search text
-  useEffect(() => {
-    if (!searchText.trim()) {
-      setFilteredProducts(products)
-    } else {
-      const searchLower = searchText.toLowerCase()
-      const filtered = products.filter(
-        (product) =>
-          (product.productName?.toLowerCase() || '').includes(searchLower) ||
-          (product.productPrice?.toString() || '').includes(searchText) ||
-          (product.originalPrice?.toString() || '').includes(searchText) ||
-          (product.discountPercentage?.toString() || '').includes(searchText) ||
-          (product.availableOffers?.toLowerCase() || '').includes(searchLower) ||
-          (product.highlights?.toLowerCase() || '').includes(searchLower)
-      )
-      setFilteredProducts(filtered)
-    }
-    // Reset to first page when search changes
-    setCurrentPage(1)
-  }, [searchText, products])
-
+  // ✅ Search
   const onSearchTextChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchText(event.target.value)
+    if (gridApi) gridApi.setQuickFilter(event.target.value)
   }
 
+  const onGridReady = (params: any) => {
+    setGridApi(params.api)
+  }
+
+  // ✅ Modal toggle
   const toggleModal = useCallback(() => {
     setFormData({
       name: "",
@@ -123,63 +109,64 @@ const ProductData = () => {
       images: [],
       imagesPreviews: [],
       productPrice: 0,
-      originalPrice: 0,
+      originalPrice: "",
       discountPercentage: 0,
-      activity: 1
     })
     setIsModalVisible(!isModalVisible)
   }, [isModalVisible])
 
-  // Handle edit product
+  // ✅ Edit
   const handleEdit = useCallback((product: Product) => {
     setFormData({
       id: product.id,
-      name: product.productName || '',
-      amount: product.productPrice?.toString() || '0',
-      discount: product.discountPercentage?.toString() || '0',
-      availableOffers: product.availableOffers || '',
-      highlights: product.highlights || '',
+      name: product.productName || "",
+      amount: product.productPrice?.toString() || "0",
+      discount: product.discountPercentage?.toString() || "0",
+      availableOffers: product.availableOffers || "",
+      highlights: product.highlights || "",
       images: product.images || [],
       imagesPreviews: Array.isArray(product.images) ? product.images : [],
       productPrice: product.productPrice || 0,
-      originalPrice: product.originalPrice || 0,
+      originalPrice: product.originalPrice?.toString() || "0",
       discountPercentage: product.discountPercentage || 0,
-      activity: product.activity || 1,
     })
     setIsModalVisible(true)
   }, [])
 
-  // Open delete confirmation modal
+  // ✅ Delete
   const handleDelete = useCallback((product: Product) => {
     setProductToDelete(product)
     setIsDeleteModalOpen(true)
   }, [])
 
-  // Close delete confirmation modal
   const closeDeleteModal = useCallback(() => {
     setIsDeleteModalOpen(false)
     setProductToDelete(null)
   }, [])
 
-  // Handle delete product
+  const handleView = useCallback((product: Product) => {
+    setViewProduct(product)
+    setIsViewModalOpen(true)
+  }, [])
+
+  const closeViewModal = useCallback(() => {
+    setIsViewModalOpen(false)
+    setViewProduct(null)
+  }, [])
+
   const confirmDelete = async () => {
     if (!productToDelete?.id) return
-    
     setIsDeleting(true)
     try {
       const response = await fetch(`/api/products/${productToDelete.id}`, {
-        method: 'DELETE',
+        method: "DELETE",
       })
-      
-      if (!response.ok) {
-        throw new Error('Failed to delete product')
-      }
-      
+      if (!response.ok) throw new Error("Failed to delete product")
+
       toast({
         title: "Success",
         description: "Product deleted successfully",
       })
-      
       fetchProducts()
       closeDeleteModal()
     } catch (error) {
@@ -198,63 +185,154 @@ const ProductData = () => {
     fetchProducts()
   }, [fetchProducts])
 
-  // Pagination logic
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const currentProducts = filteredProducts.slice(startIndex, endIndex)
+  // ✅ Column Definitions
+  const columnDefs: ColDef[] = [
+    {
+      headerName: "Image",
+      field: "images",
+      minWidth: 100,
+      cellRenderer: (params: any) => {
+        const imageSrc =
+          Array.isArray(params.value) && params.value.length > 0
+            ? params.value[0] // ✅ always show first image
+            : "/placeholder.svg?height=40&width=40"
 
-  // Go to specific page
-  const goToPage = useCallback((page: number) => {
-    setCurrentPage(Math.max(1, Math.min(page, totalPages)))
-  }, [totalPages])
+        return (
+          <div className="flex items-center justify-center h-full w-full">
+            <img
+              src={imageSrc}
+              alt="Product"
+              className="w-10 h-10 rounded-sm border object-cover"
+              onError={(e: any) =>
+                (e.currentTarget.src = "/placeholder.svg?height=40&width=40")
+              }
+            />
+          </div>
+        )
+      },
+    },
 
-  const stripHtml = (html: string | undefined): string => {
-    if (!html) return ''
-    const tempDiv = document.createElement("div")
-    tempDiv.innerHTML = html
-    return tempDiv.textContent || tempDiv.innerText || ""
-  }
+    {
+      headerName: "Name",
+      field: "productName",
+      flex: 1.5,
+      sortable: true,
+      filter: true,
+      cellRenderer: (params: any) => (
+        <span className="text-sm font-medium text-gray-900">{params.value || "No Name"}</span>
+      ),
+    },
+    {
+      headerName: "Orignal Price ($)",
+      field: "originalPrice",
+      flex: 1.5,
+      sortable: true,
+      filter: true,
+      cellRenderer: (params: any) => (
+        <div className="flex items-center justify-center h-full w-full">
+          <p className="text-sm text-gray-900">
+            ${(params.value || 0).toFixed(2)}
+          </p>
+        </div>
+      ),
+    },
+    {
+      headerName: "Discount Price ($)",
+      field: "productPrice",
+      flex: 1.5,
+      sortable: true,
+      filter: true,
+      cellRenderer: (params: any) => (
+        <div className="flex items-center justify-center h-full w-full">
+          <p className="text-sm text-gray-900">
+            ${(params.value || 0).toFixed(2)}
+          </p>
+        </div>
+      ),
+    },
+    {
+      headerName: "Discount (%)",
+      field: "discountPercentage",
+      flex: 1,
+      cellRenderer: (params: any) => (
+        <span
+          className={`px-2 py-1 text-xs rounded-full ${params.value > 0 ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
+            }`}
+        >
+          {params.value || 0}%
+        </span>
+      ),
+    },
+    {
+      headerName: "Actions",
+      field: "action",
+      flex: 1,
+      cellRenderer: (params: any) => (
+        <div className="flex items-center justify-center gap-2 h-full w-full">
+          {/* View button */}
+          <button
+            onClick={() => handleView(params.data)}
+            className="p-1 rounded-full bg-green-50 text-green-600 hover:bg-green-100 transition"
+          >
+            <Eye size={16} />
+          </button>
 
-  // Format price with 2 decimal places
-  const formatPrice = (price?: number): string => {
-    if (price === undefined || price === null) return '0.00'
-    return price.toFixed(2)
-  }
+          {/* Edit button */}
+          <button
+            onClick={() => handleEdit(params.data)}
+            className="p-1 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition"
+          >
+            <Pencil size={16} />
+          </button>
+
+          {/* Delete button */}
+          <button
+            onClick={() => handleDelete(params.data)}
+            className="p-1 rounded-full bg-red-50 text-red-600 hover:bg-red-100 transition"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
+      ),
+    }
+
+
+  ]
 
   return (
-    <div className="space-y-4 text-[#333] p-4">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Products</h1>
-        <p className="text-sm text-gray-600 mt-1">View, manage, and organize all products and their details here</p>
+    <div className="space-y-4 text-[#333]">
+      <div className="px-2 mb-4">
+        <h1 className="text-3xl font-bold tracking-tight text-customButton-text">Products</h1>
+        <p className="text-sm text-[#7A6C53] mt-1">View, manage, and organize all products</p>
       </div>
 
       <Card className="shadow-md border border-gray-200">
         <div className="flex flex-col md:flex-row md:justify-between md:items-center px-6 pt-4 gap-4">
           <CardHeader className="p-0">
             <CardTitle className="text-lg text-gray-800">All Products</CardTitle>
-            <p className="text-sm text-gray-600 mt-1">{filteredProducts.length || 0} total products</p>
+            <p className="text-sm text-gray-600 mt-1">{products.length} total products</p>
           </CardHeader>
 
           {/* Search + Add Product */}
-          <div className="flex flex-wrap gap-2 items-center">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <input
-                type="text"
-                placeholder="Search products..."
-                className="border outline-none pl-10 pr-4 py-2 rounded-md shadow-sm w-52 lg:w-64 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                value={searchText}
-                onChange={onSearchTextChange}
-                aria-label="Search products"
-              />
-            </div>
+          <div className="flex gap-2 items-center">
+            <input
+              type="text"
+              placeholder="Search products..."
+              className="border outline-none p-2 rounded-md shadow-sm w-52 lg:w-64"
+              value={searchText}
+              onChange={onSearchTextChange}
+            />
             <button
               onClick={toggleModal}
-              className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 font-semibold transition flex items-center gap-2"
+              className="px-4 py-2 rounded-md bg-gradient-to-r 
+                                       from-customButton-gradientFrom
+                                       to-customButton-gradientTo
+                                       text-customButton-text
+                                       hover:bg-customButton-hoverBg
+                                       hover:text-customButton-hoverText font-semibold transition flex items-center gap-2"
               aria-label="Add new product"
             >
-              <Plus size={16} /> 
+              <Plus size={16} />
               <span>Add Product</span>
             </button>
           </div>
@@ -262,161 +340,27 @@ const ProductData = () => {
 
         <CardContent className="pt-4">
           {isLoading && <Loader />}
-          {isError && (
-            <div className="p-4 bg-red-50 text-red-700 rounded-md">
-              <p>Failed to load products. Please try again later.</p>
-            </div>
-          )}
+          {isError && <p className="p-4 bg-red-50 text-red-700 rounded-md">Failed to load products.</p>}
           {!isLoading && !isError && (
-            <div className="space-y-4">
-              {/* Custom Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
-                  <thead>
-                    <tr className="bg-gray-50 border-b border-gray-200">
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Image
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Product Name
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Price ($)
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Discount (%)
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Highlights
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {currentProducts.length > 0 ? (
-                      currentProducts.map((product, index) => (
-                        <tr key={product.id || index} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <img
-                              src={Array.isArray(product.images) && product.images.length > 0 
-                                ? product.images[0] 
-                                : "/placeholder.svg?height=40&width=40"}
-                              alt={product.productName || 'Product Image'}
-                              className="w-12 h-12 rounded-md object-cover border border-gray-200"
-                              onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
-                                const target = e.target as HTMLImageElement
-                                target.src = "/placeholder.svg?height=40&width=40"
-                              }}
-                            />
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {product.productName || 'No Name'}
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              ID: {product.id || 'N/A'}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right">
-                            <div className="text-sm font-medium text-gray-900">
-                              ${formatPrice(product.productPrice)}
-                            </div>
-                            {product.originalPrice && product.originalPrice > product.productPrice && (
-                              <div className="text-xs text-gray-500 line-through">
-                                ${formatPrice(product.originalPrice)}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-center">
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              product.discountPercentage && product.discountPercentage > 0 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {product.discountPercentage || 0}%
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="text-sm text-gray-700 max-w-xs line-clamp-2">
-                              {product.highlights ? stripHtml(product.highlights) : 'No highlights'}
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-center">
-                            <div className="flex items-center justify-center gap-2">
-                              <button
-                                onClick={() => handleEdit(product)}
-                                className="p-2 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition"
-                                aria-label="Edit product"
-                              >
-                                <Pencil size={16} />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(product)}
-                                className="p-2 rounded-full bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition"
-                                aria-label="Delete product"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
-                          {searchText ? "No products found matching your search." : "No products available."}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200">
-                  <div className="flex items-center text-sm text-gray-700">
-                    Showing {startIndex + 1} to {Math.min(endIndex, filteredProducts.length)} of{" "}
-                    {filteredProducts.length} results
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => goToPage(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Previous
-                    </button>
-
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      const pageNum = i + 1
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => goToPage(pageNum)}
-                          className={`px-3 py-1 text-sm border rounded-md ${
-                            currentPage === pageNum
-                              ? "bg-blue-600 text-white border-blue-600"
-                              : "border-gray-300 hover:bg-gray-50"
-                          }`}
-                        >
-                          {pageNum}
-                        </button>
-                      )
-                    })}
-
-                    <button
-                      onClick={() => goToPage(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                      className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
-              )}
+            <div className="ag-theme-alpine w-full">
+              <AgGridReact
+                ref={gridRef}
+                rowData={products}
+                columnDefs={columnDefs}
+                defaultColDef={{
+                  flex: 1,
+                  resizable: true,
+                  sortable: true,
+                  cellClass: "text-center text-[#2D3748] bg-white",
+                  headerClass: "custom-header",
+                }}
+                pagination={true}
+                paginationPageSize={paginationPageSize}
+                domLayout="autoHeight"
+                suppressCellSelection={true}
+                onGridReady={onGridReady}
+                rowHeight={50}
+              />
             </div>
           )}
         </CardContent>
@@ -440,11 +384,82 @@ const ProductData = () => {
         onClose={closeDeleteModal}
         onConfirm={confirmDelete}
         title="Delete Product"
-        message="Are you sure you want to delete this product? This action cannot be undone."
+        message="Are you sure you want to delete this product?"
         closeLabel="Cancel"
         confirmLabel="Delete"
         isLoading={isDeleting}
       />
+
+      <Modal
+        isOpen={isViewModalOpen}
+        onClose={closeViewModal}
+        title="Product Details"
+        width="50rem" // ✅ wider modal for details
+        closeLabel="Close"
+      >
+        {viewProduct && (
+          <div className="space-y-6 text-[#4B3F2F]">
+            {/* Images Gallery */}
+            {Array.isArray(viewProduct.images) && viewProduct.images.length > 0 ? (
+              <div className="flex flex-wrap gap-3 justify-center">
+                {viewProduct.images.map((img, idx) => (
+                  <img
+                    key={idx}
+                    src={img || "/placeholder.svg?height=150&width=150"}
+                    alt={`${viewProduct.productName} - ${idx + 1}`}
+                    className="w-28 h-28 object-cover rounded-lg border shadow-sm hover:scale-105 transition"
+                    onError={(e: any) => (e.currentTarget.src = "/placeholder.svg?height=150&width=150")}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex justify-center">
+                <img
+                  src="/placeholder.svg?height=150&width=150"
+                  alt="No product"
+                  className="w-40 h-40 object-cover rounded-lg border shadow-sm"
+                />
+              </div>
+            )}
+
+            {/* Product Info */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-[#fff5f5] p-4 rounded-xl shadow-inner">
+              <p><span className="font-semibold text-[#A30000]">Name:</span> {viewProduct.productName}</p>
+              <p><span className="font-semibold text-[#A30000]">Original Price:</span> ${viewProduct.originalPrice?.toFixed(2)}</p>
+              <p><span className="font-semibold text-[#A30000]">Price:</span> ${viewProduct.productPrice?.toFixed(2)}</p>
+              <p>
+                <span className="font-semibold text-[#A30000]">Discount:</span>{" "}
+                <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">
+                  {viewProduct.discountPercentage || 0}%
+                </span>
+              </p>
+            </div>
+
+            {/* Offers */}
+            {viewProduct.availableOffers && (
+              <div className="bg-[#fff5f5] p-4 rounded-xl shadow-sm">
+                <h4 className="font-semibold text-[#A30000] mb-2">Available Offers</h4>
+                <div
+                  className="prose prose-sm max-w-none text-gray-800"
+                  dangerouslySetInnerHTML={{ __html: viewProduct.availableOffers }}
+                />
+              </div>
+            )}
+
+            {/* Highlights */}
+            {viewProduct.highlights && (
+              <div className="bg-[#fff5f5] p-4 rounded-xl shadow-sm">
+                <h4 className="font-semibold text-[#A30000] mb-2">Highlights</h4>
+                <div
+                  className="prose prose-sm max-w-none text-gray-800"
+                  dangerouslySetInnerHTML={{ __html: viewProduct.highlights }}
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
+
     </div>
   )
 }
