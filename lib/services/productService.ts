@@ -26,15 +26,19 @@ import { Product, ProductFormData, PaginationParams } from "@/lib/types/product"
 const COLLECTION_NAME = "products";
 
 // Upload multiple images to Firebase Storage
-export const uploadProductImages = async (images: File[]): Promise<string[]> => {
-  if (!images || images.length === 0) {
-    console.log("No images to upload");
-    return [];
+export const uploadProductImages = async (images: Array<File | string>): Promise<string[]> => {
+  // Filter out any strings (already uploaded URLs)
+  const filesToUpload = images.filter((img): img is File => img instanceof File);
+  const existingUrls = images.filter((img): img is string => typeof img === 'string');
+  
+  if (filesToUpload.length === 0) {
+    // Return any existing URLs that were passed in
+    return existingUrls;
   }
 
-  console.log(`Uploading ${images.length} images...`);
+  console.log(`Uploading ${filesToUpload.length} new images...`);
   
-  const uploadPromises = images.map(async (image, index) => {
+  const uploadPromises = filesToUpload.map(async (image, index) => {
     try {
       console.log(`Uploading image ${index + 1}:`, image.name);
       const timestamp = Date.now();
@@ -54,9 +58,14 @@ export const uploadProductImages = async (images: File[]): Promise<string[]> => 
     }
   });
 
-  const results = await Promise.all(uploadPromises);
-  console.log("All images uploaded successfully:", results);
-  return results;
+  try {
+    const newImageUrls = await Promise.all(uploadPromises);
+    // Return both existing URLs and new ones
+    return [...existingUrls, ...newImageUrls];
+  } catch (error) {
+    console.error("Error uploading images:", error);
+    throw error;
+  }
 };
 
 // Delete image from Firebase Storage
@@ -103,7 +112,7 @@ export const createProduct = async (productData: ProductFormData): Promise<strin
 };
 
 // Get all products with pagination and search
-export const getProducts = async (params: PaginationParams = {}) => {
+export const getProducts = async (params: PaginationParams = { page: 1, limit: 10 }) => {
   try {
     const {
       page = 1,
@@ -207,10 +216,25 @@ export const updateProduct = async (
   try {
     const docRef = doc(db, COLLECTION_NAME, id);
     
+    // Get the existing product to track old images
+    const existingProduct = await getProductById(id);
+    const oldImageUrls = existingProduct?.images || [];
+    
     // Handle image updates if new images are provided
-    let imageUrls = productData.imageUrls || [];
-    if (productData.images && productData.images.length > 0) {
-      const newImageUrls = await uploadProductImages(productData.images);
+    let imageUrls: string[] = [];
+    
+    // Add any existing image URLs (filter out any non-string values)
+    if (Array.isArray(productData.images)) {
+      imageUrls = productData.images.filter((img): img is string => typeof img === 'string');
+    }
+    
+    // Handle new file uploads
+    const newImageFiles = Array.isArray(productData.images) 
+      ? productData.images.filter((img): img is File => img instanceof File)
+      : [];
+      
+    if (newImageFiles.length > 0) {
+      const newImageUrls = await uploadProductImages(newImageFiles);
       imageUrls = [...imageUrls, ...newImageUrls];
     }
 
@@ -225,7 +249,17 @@ export const updateProduct = async (
     delete (updateData as any).images;
     updateData.images = imageUrls;
 
+    // Update the product in Firestore
     await updateDoc(docRef, updateData);
+    
+    // Clean up old images that are no longer needed
+    const imagesToDelete = oldImageUrls.filter(url => !imageUrls.includes(url));
+    if (imagesToDelete.length > 0) {
+      console.log(`Cleaning up ${imagesToDelete.length} old images`);
+      await Promise.all(
+        imagesToDelete.map(url => deleteProductImage(url).catch(console.error))
+      );
+    }
   } catch (error) {
     console.error("Error updating product:", error);
     throw error;

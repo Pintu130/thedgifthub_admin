@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getProductById, updateProduct, deleteProduct } from '@/lib/services/productService';
+import { 
+  getProductById, 
+  updateProduct, 
+  deleteProduct,
+  uploadProductImages
+} from '@/lib/services/productService';
 
 // GET /api/products/[id]
 export async function GET(
@@ -25,6 +30,12 @@ export async function GET(
 }
 
 // PATCH /api/products/[id]
+export const config = {
+  api: {
+    bodyParser: false, // Disable the default body parser
+  },
+};
+
 export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
@@ -43,16 +54,27 @@ export async function PATCH(
       activity: 1,
     };
 
-    // Handle existing images
-    const existingImages = formData.getAll('images') as string[];
-    if (existingImages && existingImages.length > 0) {
-      productData.images = existingImages;
-    }
+    // Handle images
+    const imageInputs = formData.getAll('images');
+    const existingImages: string[] = [];
+    const newImageFiles: File[] = [];
 
-    // Handle new image uploads
-    const imageFiles = formData.getAll('images') as File[];
-    if (imageFiles && imageFiles.length > 0) {
-      productData.images = [...(productData.images || []), ...imageFiles];
+    // Separate existing URLs from new files
+    imageInputs.forEach((item) => {
+      if (typeof item === 'string') {
+        existingImages.push(item);
+      } else if (item instanceof File) {
+        newImageFiles.push(item);
+      }
+    });
+
+    // Only process if there are new files to upload
+    if (newImageFiles.length > 0) {
+      // Upload new images and get their URLs
+      const uploadedImageUrls = await uploadProductImages(newImageFiles);
+      productData.images = [...existingImages, ...uploadedImageUrls];
+    } else {
+      productData.images = existingImages;
     }
 
     await updateProduct(params.id, productData);
