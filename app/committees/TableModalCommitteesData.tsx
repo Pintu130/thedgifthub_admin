@@ -263,6 +263,7 @@ export default function TableModalCommitteesData({
       closeLabel={closeLabel}
       confirmLabel={saveLabel}
       isLoading={isLoading}
+      width="60rem"
     >
       {isLoading && <Loader />}
 

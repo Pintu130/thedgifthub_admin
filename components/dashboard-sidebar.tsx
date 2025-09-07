@@ -133,7 +133,12 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
       href: "/products",              
       active: pathname === "/products",
     },
-
+    {
+      label: "Categories",
+      icon: Users,
+      href: "/categories",
+      active: pathname === "/categories",
+    },
   ]
 
   // Admin section routes

@@ -7,12 +7,15 @@ import { X } from "lucide-react"
 interface ModalProps {
   isOpen: boolean
   onClose: () => void
-  onConfirm?: () => void
+  onConfirm?: (e?: React.FormEvent) => void | Promise<void>
   title: string
   message?: string
   children?: React.ReactNode
   closeLabel?: string
   confirmLabel?: string
+  confirmText?: string
+  confirmVariant?: string
+  isConfirmDisabled?: boolean
   isLoading?: boolean
   width?: string // ✅ new prop for dynamic width (e.g. "50rem", "600px", "80%")
 }
@@ -26,6 +29,7 @@ export default function Modal({
   children,
   closeLabel = "Cancel",
   confirmLabel = "Confirm",
+  confirmVariant = "default",
   isLoading = false,
   width = "35rem", // ✅ default width
 }: ModalProps) {
@@ -68,7 +72,9 @@ export default function Modal({
           <h3 className="text-lg font-semibold text-[#4B3F2F]">{title}</h3>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 transition-colors"
+            className={`${confirmVariant === "destructive" 
+              ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" 
+              : "bg-primary text-primary-foreground hover:bg-primary/90"} transition-colors`}
             aria-label="Close"
           >
             <X size={20} />
