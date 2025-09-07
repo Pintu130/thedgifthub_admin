@@ -54,8 +54,6 @@ const ProductData = () => {
   const [isDeleting, setIsDeleting] = useState(false)
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
   const [viewProduct, setViewProduct] = useState<Product | null>(null)
-  console.log("🚀 ~ ProductData ~ viewProduct:", viewProduct)
-
 
   const gridRef = useRef<AgGridReact | null>(null)
   const [paginationPageSize] = useState(10)

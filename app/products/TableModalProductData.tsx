@@ -93,12 +93,20 @@ export default function TableModalProductData({
     if (!e.target.files) return
 
     const files = Array.from(e.target.files)
-    const currentImages = Array.isArray(formData.images) ? formData.images : []
+    const currentImages = Array.isArray(formData.images) ? [...formData.images] : []
+    const currentPreviews = Array.isArray(formData.imagesPreviews) ? [...formData.imagesPreviews] : []
     const validFiles: File[] = []
     const newPreviews: string[] = []
 
+    // Count existing non-blob URLs (these are the ones already uploaded)
+    const existingImageCount = currentImages.filter(img => typeof img === 'string').length
+    
+    // Calculate available slots for new images
+    const availableSlots = 4 - (existingImageCount + currentImages.filter(img => img instanceof File).length)
+
     files.forEach((file) => {
-      if (currentImages.length + validFiles.length >= 4) {
+      // Check if we've reached the maximum number of images (4)
+      if (existingImageCount + validFiles.length >= 4) {
         toast({
           variant: "destructive",
           title: "Maximum images reached",
@@ -130,14 +138,11 @@ export default function TableModalProductData({
     })
 
     if (validFiles.length > 0) {
-      setFormData(prev => {
-        const currentPreviews = Array.isArray(prev.imagesPreviews) ? prev.imagesPreviews : []
-        return {
-          ...prev,
-          images: [...currentImages, ...validFiles],
-          imagesPreviews: [...currentPreviews, ...newPreviews],
-        }
-      })
+      setFormData(prev => ({
+        ...prev,
+        images: [...currentImages, ...validFiles],
+        imagesPreviews: [...currentPreviews, ...newPreviews],
+      }))
 
       if (errors.images) {
         setErrors(prev => ({ ...prev, images: undefined }))
@@ -151,16 +156,16 @@ export default function TableModalProductData({
 
   const removeImage = (index: number) => {
     setFormData(prev => {
-      const currentImages: Array<File | string> = Array.isArray(prev.images) ? [...prev.images] : []
-      const currentPreviews = Array.isArray(prev.imagesPreviews) ? [...prev.imagesPreviews] : []
+      // Create new arrays without the item at the specified index
+      const newImages = [...(Array.isArray(prev.images) ? prev.images : [])]
+      const newPreviews = [...(Array.isArray(prev.imagesPreviews) ? prev.imagesPreviews : [])]
 
-      if (currentPreviews[index]?.startsWith("blob:")) {
-        URL.revokeObjectURL(currentPreviews[index])
+      // Revoke the object URL if it's a blob URL
+      if (newPreviews[index]?.startsWith("blob:")) {
+        URL.revokeObjectURL(newPreviews[index])
       }
 
-      // Create new arrays without the item at the specified index
-      const newImages = [...currentImages]
-      const newPreviews = [...currentPreviews]
+      // Remove the image and its preview
       newImages.splice(index, 1)
       newPreviews.splice(index, 1)
 
@@ -245,6 +250,8 @@ export default function TableModalProductData({
 
     try {
       const formDataToSend = new FormData()
+      
+      // Prepare the product data
       const productData = {
         productName: formData.name,
         productPrice: parseFloat(formData.amount) || 0,
@@ -252,28 +259,38 @@ export default function TableModalProductData({
         discountPercentage: parseFloat(formData.discount) || 0,
         availableOffers: formData.availableOffers,
         highlights: formData.highlights,
-        images: formData.imagesPreviews?.filter(url => !url.startsWith('blob:')) || []
       }
 
-      // Append all fields
+      // Append all non-image fields
       Object.entries(productData).forEach(([key, value]) => {
-        if (Array.isArray(value)) {
-          value.forEach((item, index) => {
-            formDataToSend.append(`${key}[${index}]`, item)
-          })
-        } else if (value !== null && value !== undefined) {
+        if (value !== null && value !== undefined) {
           formDataToSend.append(key, value.toString())
         }
       })
 
-      // Add new image files
-      if (formData.images) {
-        formData.images.forEach((file) => {
-          if (file instanceof File) {
-            formDataToSend.append('images', file)
-          }
-        })
-      }
+      // Handle images - separate existing URLs from new files
+      const existingImages: string[] = []
+      const newImageFiles: File[] = []
+
+      formData.images.forEach(item => {
+        if (typeof item === 'string') {
+          // This is an existing image URL
+          existingImages.push(item)
+        } else if (item instanceof File) {
+          // This is a new file to upload
+          newImageFiles.push(item)
+        }
+      })
+
+      // First add all existing images with consistent field name
+      existingImages.forEach(url => {
+        formDataToSend.append('images', url)
+      })
+
+      // Then add all new image files with the same field name
+      newImageFiles.forEach(file => {
+        formDataToSend.append('images', file)
+      })
 
       let response: Response
       let url = '/api/products'
