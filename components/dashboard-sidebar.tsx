@@ -63,12 +63,6 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
       href: "/home",
       active: pathname === "/home",
     },
-    {
-      label: "Committees",
-      icon: Users,
-      href: "/committees",
-      active: pathname === "/committees",
-    },
   ]
 
   // Pages dropdown
@@ -138,6 +132,12 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
       icon: Users,
       href: "/categories",
       active: pathname === "/categories",
+    },
+    {
+      label: "Offers",
+      icon: Users,
+      href: "/offers",
+      active: pathname === "/offers",
     },
   ]
 
