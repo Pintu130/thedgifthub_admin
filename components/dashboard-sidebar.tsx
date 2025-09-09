@@ -134,16 +134,17 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
       href: "/categories",
       active: pathname === "/categories",
     },
-  ]
-
-  // Admin section routes
-  const adminRoutes: RouteConfig[] = [
     {
       label: "Users",
       icon: Users,
       href: "/users",
       active: pathname === "/users",
     },
+  ]
+
+  // Admin section routes
+  const adminRoutes: RouteConfig[] = [
+
   ]
 
   // Admin section routes
