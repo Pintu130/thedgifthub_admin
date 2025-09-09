@@ -64,12 +64,6 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
       href: "/home",
       active: pathname === "/home",
     },
-    {
-      label: "Committees",
-      icon: Users,
-      href: "/committees",
-      active: pathname === "/committees",
-    },
   ]
 
   // Pages dropdown
@@ -140,6 +134,10 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
       href: "/categories",
       active: pathname === "/categories",
     },
+  ]
+
+  // Admin section routes
+  const adminRoutes: RouteConfig[] = [
     {
       label: "Users",
       icon: Users,
