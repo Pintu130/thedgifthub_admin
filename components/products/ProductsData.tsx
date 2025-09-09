@@ -17,15 +17,17 @@ import type { Product } from "@/lib/types/product"
 export interface ProductFormData {
   id?: string
   name: string
-  amount: string              // input → string
-  discount: string            // input → string
-  originalPrice: string       // 👈 input → string
+  amount: string // input → string
+  discount: string // input → string
+  originalPrice: string // 👈 input → string
   availableOffers: string
   highlights: string
+  description: string
+  status: "active" | "inactive"
   images: Array<File | string>
   imagesPreviews: string[]
-  productPrice: number        // computed / saved as number
-  discountPercentage: number  // computed / saved as number
+  productPrice: number // computed / saved as number
+  discountPercentage: number // computed / saved as number
 }
 
 const ProductData = () => {
@@ -41,6 +43,8 @@ const ProductData = () => {
     discount: "",
     availableOffers: "",
     highlights: "",
+    description: "",
+    status: "inactive",
     images: [],
     imagesPreviews: [],
     productPrice: 0,
@@ -104,6 +108,8 @@ const ProductData = () => {
       discount: "",
       availableOffers: "",
       highlights: "",
+      description: "",
+      status: "inactive",
       images: [],
       imagesPreviews: [],
       productPrice: 0,
@@ -122,6 +128,8 @@ const ProductData = () => {
       discount: product.discountPercentage?.toString() || "0",
       availableOffers: product.availableOffers || "",
       highlights: product.highlights || "",
+      description: product.description || "",
+      status: product.status || "inactive",
       images: product.images || [],
       imagesPreviews: Array.isArray(product.images) ? product.images : [],
       productPrice: product.productPrice || 0,
@@ -131,7 +139,6 @@ const ProductData = () => {
     setIsModalVisible(true)
   }, [])
 
-  // ✅ Delete
   const handleDelete = useCallback((product: Product) => {
     setProductToDelete(product)
     setIsDeleteModalOpen(true)
@@ -188,7 +195,8 @@ const ProductData = () => {
     {
       headerName: "Image",
       field: "images",
-      minWidth: 100,
+      minWidth: 120,
+      maxWidth: 150,
       cellRenderer: (params: any) => {
         const imageSrc =
           Array.isArray(params.value) && params.value.length > 0
@@ -198,7 +206,7 @@ const ProductData = () => {
         return (
           <div className="flex items-center justify-center h-full w-full">
             <img
-              src={imageSrc}
+              src={imageSrc || "/placeholder.svg"}
               alt="Product"
               className="w-10 h-10 rounded-sm border object-cover"
               onError={(e: any) =>
@@ -209,23 +217,47 @@ const ProductData = () => {
         )
       },
     },
-
     {
       headerName: "Name",
       field: "productName",
       flex: 1.5,
       sortable: true,
       filter: true,
+      minWidth: 200,
+      maxWidth: 300,
       cellRenderer: (params: any) => (
-        <span className="text-sm font-medium text-gray-900">{params.value || "No Name"}</span>
+        <span className="text-sm font-medium text-gray-900">
+          {params.value || "No Name"}
+        </span>
       ),
     },
     {
-      headerName: "Orignal Price ($)",
+      headerName: "Status",
+      field: "status",
+      flex: 1,
+      sortable: true,
+      filter: true,
+      minWidth: 140,
+      maxWidth: 180,
+      cellRenderer: (params: any) => (
+        <span
+          className={`px-2 py-1 text-xs rounded-full ${params.value === "active"
+              ? "bg-green-100 text-green-800"
+              : "bg-red-100 text-red-800"
+            }`}
+        >
+          {params.value === "active" ? "Active" : "Inactive"}
+        </span>
+      ),
+    },
+    {
+      headerName: "Original Price ($)",
       field: "originalPrice",
       flex: 1.5,
       sortable: true,
       filter: true,
+      minWidth: 160,
+      maxWidth: 200,
       cellRenderer: (params: any) => (
         <div className="flex items-center justify-center h-full w-full">
           <p className="text-sm text-gray-900">
@@ -240,6 +272,8 @@ const ProductData = () => {
       flex: 1.5,
       sortable: true,
       filter: true,
+      minWidth: 160,
+      maxWidth: 200,
       cellRenderer: (params: any) => (
         <div className="flex items-center justify-center h-full w-full">
           <p className="text-sm text-gray-900">
@@ -252,9 +286,13 @@ const ProductData = () => {
       headerName: "Discount (%)",
       field: "discountPercentage",
       flex: 1,
+      minWidth: 140,
+      maxWidth: 180,
       cellRenderer: (params: any) => (
         <span
-          className={`px-2 py-1 text-xs rounded-full ${params.value > 0 ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
+          className={`px-2 py-1 text-xs rounded-full ${params.value > 0
+              ? "bg-green-100 text-green-800"
+              : "bg-gray-100 text-gray-800"
             }`}
         >
           {params.value || 0}%
@@ -265,6 +303,8 @@ const ProductData = () => {
       headerName: "Actions",
       field: "action",
       flex: 1,
+      minWidth: 160,
+      maxWidth: 200,
       cellRenderer: (params: any) => (
         <div className="flex items-center justify-center gap-2 h-full w-full">
           {/* View button */}
@@ -292,10 +332,9 @@ const ProductData = () => {
           </button>
         </div>
       ),
-    }
-
-
+    },
   ]
+
 
   return (
     <div className="space-y-4 text-[#333]">
@@ -305,14 +344,14 @@ const ProductData = () => {
       </div>
 
       <Card className="shadow-md border border-gray-200">
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center px-6 pt-4 gap-4">
+        <div className="flex flex-wrap flex-col md:flex-row md:justify-between md:items-center px-6 pt-4 gap-4">
           <CardHeader className="p-0">
             <CardTitle className="text-lg text-gray-800">All Products</CardTitle>
             <p className="text-sm text-gray-600 mt-1">{products.length} total products</p>
           </CardHeader>
 
           {/* Search + Add Product */}
-          <div className="flex gap-2 items-center">
+          <div className="flex flex-wrap gap-2 items-center">
             <input
               type="text"
               placeholder="Search products..."
@@ -422,9 +461,25 @@ const ProductData = () => {
 
             {/* Product Info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-[#fff5f5] p-4 rounded-xl shadow-inner">
-              <p><span className="font-semibold text-[#A30000]">Name:</span> {viewProduct.productName}</p>
-              <p><span className="font-semibold text-[#A30000]">Original Price:</span> ${viewProduct.originalPrice?.toFixed(2)}</p>
-              <p><span className="font-semibold text-[#A30000]">Price:</span> ${viewProduct.productPrice?.toFixed(2)}</p>
+              <p>
+                <span className="font-semibold text-[#A30000]">Name:</span> {viewProduct.productName}
+              </p>
+              <p>
+                <span className="font-semibold text-[#A30000]">Status:</span>{" "}
+                <span
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${viewProduct.status === "active" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                    }`}
+                >
+                  {viewProduct.status === "active" ? "Active" : "Inactive"}
+                </span>
+              </p>
+              <p>
+                <span className="font-semibold text-[#A30000]">Original Price:</span> $
+                {viewProduct.originalPrice?.toFixed(2)}
+              </p>
+              <p>
+                <span className="font-semibold text-[#A30000]">Price:</span> ${viewProduct.productPrice?.toFixed(2)}
+              </p>
               <p>
                 <span className="font-semibold text-[#A30000]">Discount:</span>{" "}
                 <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">
@@ -432,6 +487,13 @@ const ProductData = () => {
                 </span>
               </p>
             </div>
+
+            {viewProduct.description && (
+              <div className="bg-[#fff5f5] p-4 rounded-xl shadow-sm">
+                <h4 className="font-semibold text-[#A30000] mb-2">Description</h4>
+                <p className="text-gray-800 whitespace-pre-wrap">{viewProduct.description}</p>
+              </div>
+            )}
 
             {/* Offers */}
             {viewProduct.availableOffers && (
@@ -457,7 +519,6 @@ const ProductData = () => {
           </div>
         )}
       </Modal>
-
     </div>
   )
 }

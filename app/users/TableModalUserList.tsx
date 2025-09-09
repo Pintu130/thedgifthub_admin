@@ -1,241 +1,276 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
-import { useCreateAuthUserMutation, useGetRoleDropdownQuery, useUpdateAuthUserMutation } from "@/lib/redux/features/post/postsApiSlice"
+import { collection, addDoc, updateDoc, doc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 import Modal from "@/components/common/Modal"
 import FormInput from "@/components/common/FormInput"
 import FormSelect from "@/components/common/FormSelect"
+import FormTextarea from "@/components/common/FormTextarea"
 import Loader from "@/components/loading-screen"
 
-// Update the interface to include optional id
 interface UserFormData {
-    id?: string
-    name: string
-    email: string
-    password: string
-    role: string
+  id?: string
+  firstName: string
+  lastName: string
+  email: string
+  phoneNumber: string
+  address: string
+  city: string
+  gender: string
 }
 
 interface FormErrors {
-    name?: string
-    email?: string
-    password?: string
-    role?: string
+  firstName?: string
+  lastName?: string
+  email?: string
+  phoneNumber?: string
+  address?: string
+  city?: string
+  gender?: string
 }
 
 interface Props {
-    isModalVisible: boolean
-    onClose: () => void
-    title: string
-    closeLabel: string
-    saveLabel: string
-    formData: UserFormData
-    setFormData: (data: UserFormData) => void
-    getTotalUsers: () => void
+  isModalVisible: boolean
+  onClose: () => void
+  title: string
+  closeLabel: string
+  saveLabel: string
+  formData: UserFormData
+  setFormData: (data: UserFormData) => void
+  getTotalUsers: () => void
 }
 
 export default function TableModalUserList({
-    isModalVisible,
-    onClose,
-    title,
-    closeLabel,
-    saveLabel,
-    formData,
-    setFormData,
-    getTotalUsers,
+  isModalVisible,
+  onClose,
+  title,
+  closeLabel,
+  saveLabel,
+  formData,
+  setFormData,
+  getTotalUsers,
 }: Props) {
-    const { toast } = useToast()
-    const [createUser, { isLoading: isCreating }] = useCreateAuthUserMutation()
-    const [updateUser, { isLoading: isUpdating }] = useUpdateAuthUserMutation()
-    const { data: rolesResponse, isLoading: isRolesLoading } = useGetRoleDropdownQuery()
-    const isLoading = isCreating || isUpdating || isRolesLoading
-    const [errors, setErrors] = useState<FormErrors>({})
-    const [isSubmitting, setIsSubmitting] = useState(false)
-    const isEditMode = Boolean(formData.id)
+  const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(false)
+  const [errors, setErrors] = useState<FormErrors>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const isEditMode = Boolean(formData.id)
 
-    // Reset errors when modal opens/closes
-    useEffect(() => {
-        if (isModalVisible) {
-            setErrors({})
-            setIsSubmitting(false)
-        }
-    }, [isModalVisible])
+  // Reset errors when modal opens/closes
+  useEffect(() => {
+    if (isModalVisible) {
+      setErrors({})
+      setIsSubmitting(false)
+    }
+  }, [isModalVisible])
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value } = e.target
-        setFormData({ ...formData, [name]: value })
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setFormData({ ...formData, [name]: value })
 
-        // Clear error for this field when user types
-        if (errors[name as keyof FormErrors]) {
-            setErrors((prev) => ({ ...prev, [name]: undefined }))
-        }
+    // Clear error for this field when user types
+    if (errors[name as keyof FormErrors]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }))
+    }
+  }
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {}
+
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = "First name is required"
     }
 
-    const validateForm = (): boolean => {
-        const newErrors: FormErrors = {}
-
-        // Name validation
-        if (!formData.name.trim()) {
-            newErrors.name = "Name is required"
-        }
-
-        // Email validation
-        if (!formData.email.trim()) {
-            newErrors.email = "Email is required"
-        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-            newErrors.email = "Email is invalid"
-        }
-
-        // Password validation - only required for new users
-        if (!isEditMode && !formData.password) {
-            newErrors.password = "Password is required"
-        } else if (formData.password && formData.password.length < 6 && formData.password.length > 0) {
-            newErrors.password = "Password must be at least 6 characters"
-        }
-
-        // Role validation
-        if (!formData.role) {
-            newErrors.role = "Role is required"
-        }
-
-        setErrors(newErrors)
-        return Object.keys(newErrors).length === 0
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = "Last name is required"
     }
 
-    const handleSubmit = async () => {
-        setIsSubmitting(true)
-
-        if (!validateForm()) {
-            setIsSubmitting(false)
-            return
-        }
-
-        try {
-            let res
-
-            if (isEditMode) {
-                const updateData: any = {
-                    id: formData.id,
-                    name: formData.name,
-                    email: formData.email,
-                    role: formData.role
-                }
-
-                if (formData.password) {
-                    updateData.password = formData.password
-                }
-
-                res = await updateUser(updateData).unwrap()
-
-                toast({
-                    title: "Success",
-                    description: res?.message || "User updated successfully",
-                })
-            } else {
-                res = await createUser({
-                    name: formData.name,
-                    email: formData.email,
-                    password: formData.password,
-                    role: formData.role,
-                }).unwrap()
-
-                toast({
-                    title: "Success",
-                    description: res?.message || "User created successfully",
-                })
-            }
-
-            onClose()
-            getTotalUsers()
-        } catch (error: any) {
-
-            const errorMessage =
-                error?.data?.messages ||
-                error?.data?.message ||
-                error?.error ||
-                "Something went wrong"
-
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: errorMessage,
-            })
-        } finally {
-            setIsSubmitting(false)
-        }
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required"
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Email is invalid"
     }
 
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = "Phone number is required"
+    } else if (!/^\d{10}$/.test(formData.phoneNumber.replace(/\D/g, ""))) {
+      newErrors.phoneNumber = "Phone number must be 10 digits"
+    }
 
+    if (!formData.address.trim()) {
+      newErrors.address = "Address is required"
+    }
 
-    // Role options with label/value pairs for more flexibility
-    const roleOptions =
-        rolesResponse?.data?.map((role: string) => ({
-            label: role,
-            value: role,
-        })) || []
+    if (!formData.city.trim()) {
+      newErrors.city = "City is required"
+    }
 
-    return (
-        <Modal
-            isOpen={isModalVisible}
-            onClose={onClose}
-            onConfirm={handleSubmit}
-            title={title}
-            message=""
-            closeLabel={closeLabel}
-            confirmLabel={saveLabel}
-            isLoading={isLoading || isSubmitting}
-        >
-            {isLoading && <Loader />}
-            <div className="!space-y-4  py-4">
-                <FormInput
-                    label="Name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    placeholder="Enter user name"
-                    required
-                    error={errors.name}
-                />
+    if (!formData.gender) {
+      newErrors.gender = "Gender is required"
+    }
 
-                <FormInput
-                    label="Email"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="Enter email address"
-                    required
-                    error={errors.email}
-                />
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
-                {
-                    !isEditMode &&
-                    <FormInput
-                        label="Password"
-                        name="password"
-                        type="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        placeholder={isEditMode ? "Leave blank to keep current password" : "Enter password"}
-                        required={!isEditMode}
-                        error={errors.password}
-                    />
-                }
+  const handleSubmit = async () => {
+    setIsSubmitting(true)
+    setIsLoading(true)
 
-                <FormSelect
-                    label="Role"
-                    name="role"
-                    value={formData.role}
-                    onChange={handleChange}
-                    options={roleOptions}
-                    placeholder="Select user role"
-                    required
-                    error={errors.role}
-                />
-            </div>
-        </Modal>
-    )
+    if (!validateForm()) {
+      setIsSubmitting(false)
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      if (isEditMode) {
+        const userRef = doc(db, "users", formData.id!)
+        await updateDoc(userRef, {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phoneNumber: formData.phoneNumber,
+          address: formData.address,
+          city: formData.city,
+          gender: formData.gender,
+          updatedAt: new Date(),
+        })
+
+        toast({
+          title: "Success",
+          description: "User updated successfully",
+        })
+      } else {
+        await addDoc(collection(db, "users"), {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phoneNumber: formData.phoneNumber,
+          address: formData.address,
+          city: formData.city,
+          gender: formData.gender,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+
+        toast({
+          title: "Success",
+          description: "User created successfully",
+        })
+      }
+
+      onClose()
+      getTotalUsers()
+    } catch (error: any) {
+      console.error("Error saving user:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Something went wrong while saving user",
+      })
+    } finally {
+      setIsSubmitting(false)
+      setIsLoading(false)
+    }
+  }
+
+  const genderOptions = [
+    { label: "Male", value: "male" },
+    { label: "Female", value: "female" },
+    { label: "Other", value: "other" },
+  ]
+
+  return (
+    <Modal
+      isOpen={isModalVisible}
+      onClose={onClose}
+      onConfirm={handleSubmit}
+      title={title}
+      message=""
+      closeLabel={closeLabel}
+      confirmLabel={saveLabel}
+      isLoading={isLoading || isSubmitting}
+    >
+      {isLoading && <Loader />}
+      <div className="!space-y-4 py-4">
+        <FormInput
+          label="First Name"
+          name="firstName"
+          value={formData.firstName}
+          onChange={handleChange}
+          placeholder="Enter first name"
+          required
+          error={errors.firstName}
+        />
+
+        <FormInput
+          label="Last Name"
+          name="lastName"
+          value={formData.lastName}
+          onChange={handleChange}
+          placeholder="Enter last name"
+          required
+          error={errors.lastName}
+        />
+
+        <FormInput
+          label="Email"
+          name="email"
+          type="email"
+          value={formData.email}
+          onChange={handleChange}
+          placeholder="Enter email address"
+          required
+          error={errors.email}
+        />
+
+        <FormInput
+          label="Phone Number"
+          name="phoneNumber"
+          type="tel"
+          value={formData.phoneNumber}
+          onChange={handleChange}
+          placeholder="Enter phone number"
+          required
+          error={errors.phoneNumber}
+        />
+
+        <FormTextarea
+          label="Address"
+          name="address"
+          value={formData.address}
+          onChange={handleChange}
+          placeholder="Enter full address"
+          required
+          error={errors.address}
+          rows={3}
+        />
+
+        <FormInput
+          label="City"
+          name="city"
+          value={formData.city}
+          onChange={handleChange}
+          placeholder="Enter city"
+          required
+          error={errors.city}
+        />
+
+        <FormSelect
+          label="Gender"
+          name="gender"
+          value={formData.gender}
+          onChange={handleChange}
+          options={genderOptions}
+          placeholder="Select gender"
+          required
+          error={errors.gender}
+        />
+      </div>
+    </Modal>
+  )
 }

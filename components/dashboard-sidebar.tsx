@@ -22,6 +22,7 @@ import {
   Search,
   Package,
 } from "lucide-react"
+import { MdCategory } from "react-icons/md"
 import Image from "next/image"
 import { useState, useEffect } from "react"
 
@@ -128,34 +129,35 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
       active: pathname === "/seo-management",
     },
     {
-      label: "Products",              
-      icon: Package,                  
-      href: "/products",              
+      label: "Products",
+      icon: Package,
+      href: "/products",
       active: pathname === "/products",
     },
     {
       label: "Categories",
-      icon: Users,
+      icon: MdCategory,
       href: "/categories",
       active: pathname === "/categories",
     },
-  ]
-
-  // Admin section routes
-  const adminRoutes: RouteConfig[] = [
     {
-      label: "Admin Users",
+      label: "Users",
       icon: Users,
       href: "/users",
       active: pathname === "/users",
     },
-    {
-      label: "Setting",
-      icon: Settings,
-      href: "/settings",
-      active: pathname === "/settings",
-    },
   ]
+
+  // Admin section routes
+  // const adminRoutes: RouteConfig[] = [
+
+  //   {
+  //     label: "Setting",
+  //     icon: Settings,
+  //     href: "/settings",
+  //     active: pathname === "/settings",
+  //   },
+  // ]
 
   // Check if any dropdown pages are active
   const isAnyHomePageActive = homeDropdownPages.some((page) => page.active)
@@ -276,10 +278,10 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
           {renderRoutes(bottomRoutes)}
 
           {/* Separator */}
-          {adminRoutes.length > 0 && <Separator className="my-4 bg-[#FFCCCC]" />}
+          {/* {adminRoutes.length > 0 && <Separator className="my-4 bg-[#FFCCCC]" />} */}
 
           {/* 7. Admin Routes */}
-          {renderRoutes(adminRoutes)}
+          {/* {renderRoutes(adminRoutes)} */}
 
           <div className="mb-14"></div>
         </div>

@@ -8,21 +8,23 @@ import Loader from "@/components/loading-screen"
 import { useToast } from "@/hooks/use-toast"
 import { X, Plus } from "lucide-react"
 import AdvancedCKEditor from "@/components/common/advanced-ckeditor"
+import { Switch } from "@/components/ui/switch"
 
 export interface ProductFormData {
   id?: string
   name: string
-  amount: string        // string because it comes from input
-  discount: string      // string because it comes from input
+  amount: string // string because it comes from input
+  discount: string // string because it comes from input
   originalPrice: string // 👈 change from number → string
   availableOffers: string
   highlights: string
+  description: string
+  status: "active" | "inactive"
   images: Array<File | string>
   imagesPreviews: string[]
-  productPrice: number
-  discountPercentage: number
+  productPrice: number // computed / saved as number
+  discountPercentage: number // computed / saved as number
 }
-
 
 interface FormErrors {
   name?: string
@@ -31,6 +33,8 @@ interface FormErrors {
   availableOffers?: string
   highlights?: string
   images?: string
+  description?: string
+  status?: string
 }
 
 interface Props {
@@ -75,6 +79,8 @@ export default function TableModalProductData({
           discount: formData.discount || "",
           availableOffers: formData.availableOffers || "",
           highlights: formData.highlights || "",
+          description: formData.description || "",
+          status: formData.status || "inactive",
         })
       }
     }
@@ -89,6 +95,15 @@ export default function TableModalProductData({
     }
   }
 
+  const handleStatusChange = (checked: boolean) => {
+    const newStatus = checked ? "active" : "inactive"
+    setFormData({ ...formData, status: newStatus })
+
+    if (errors.status) {
+      setErrors((prev) => ({ ...prev, status: undefined }))
+    }
+  }
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return
 
@@ -99,10 +114,10 @@ export default function TableModalProductData({
     const newPreviews: string[] = []
 
     // Count existing non-blob URLs (these are the ones already uploaded)
-    const existingImageCount = currentImages.filter(img => typeof img === 'string').length
-    
+    const existingImageCount = currentImages.filter((img) => typeof img === "string").length
+
     // Calculate available slots for new images
-    const availableSlots = 4 - (existingImageCount + currentImages.filter(img => img instanceof File).length)
+    const availableSlots = 4 - (existingImageCount + currentImages.filter((img) => img instanceof File).length)
 
     files.forEach((file) => {
       // Check if we've reached the maximum number of images (4)
@@ -138,14 +153,14 @@ export default function TableModalProductData({
     })
 
     if (validFiles.length > 0) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         images: [...currentImages, ...validFiles],
         imagesPreviews: [...currentPreviews, ...newPreviews],
       }))
 
       if (errors.images) {
-        setErrors(prev => ({ ...prev, images: undefined }))
+        setErrors((prev) => ({ ...prev, images: undefined }))
       }
     }
 
@@ -155,7 +170,7 @@ export default function TableModalProductData({
   }
 
   const removeImage = (index: number) => {
-    setFormData(prev => {
+    setFormData((prev) => {
       // Create new arrays without the item at the specified index
       const newImages = [...(Array.isArray(prev.images) ? prev.images : [])]
       const newPreviews = [...(Array.isArray(prev.imagesPreviews) ? prev.imagesPreviews : [])]
@@ -216,6 +231,10 @@ export default function TableModalProductData({
       newErrors.discount = "Discount is required"
     }
 
+    if (!formData.description.trim()) {
+      newErrors.description = "Description is required"
+    }
+
     const tempDiv1 = document.createElement("div")
     tempDiv1.innerHTML = formData.availableOffers || ""
     const offersContent = tempDiv1.textContent || tempDiv1.innerText || ""
@@ -250,15 +269,17 @@ export default function TableModalProductData({
 
     try {
       const formDataToSend = new FormData()
-      
+
       // Prepare the product data
       const productData = {
         productName: formData.name,
-        productPrice: parseFloat(formData.amount) || 0,
-        originalPrice: parseFloat(formData.originalPrice) || 0,
-        discountPercentage: parseFloat(formData.discount) || 0,
+        productPrice: Number.parseFloat(formData.amount) || 0,
+        originalPrice: Number.parseFloat(formData.originalPrice) || 0,
+        discountPercentage: Number.parseFloat(formData.discount) || 0,
         availableOffers: formData.availableOffers,
         highlights: formData.highlights,
+        description: formData.description,
+        status: formData.status,
       }
 
       // Append all non-image fields
@@ -272,8 +293,8 @@ export default function TableModalProductData({
       const existingImages: string[] = []
       const newImageFiles: File[] = []
 
-      formData.images.forEach(item => {
-        if (typeof item === 'string') {
+      formData.images.forEach((item) => {
+        if (typeof item === "string") {
           // This is an existing image URL
           existingImages.push(item)
         } else if (item instanceof File) {
@@ -283,22 +304,22 @@ export default function TableModalProductData({
       })
 
       // First add all existing images with consistent field name
-      existingImages.forEach(url => {
-        formDataToSend.append('images', url)
+      existingImages.forEach((url) => {
+        formDataToSend.append("images", url)
       })
 
       // Then add all new image files with the same field name
-      newImageFiles.forEach(file => {
-        formDataToSend.append('images', file)
+      newImageFiles.forEach((file) => {
+        formDataToSend.append("images", file)
       })
 
       let response: Response
-      let url = '/api/products'
-      let method = 'POST'
+      let url = "/api/products"
+      let method = "POST"
 
       if (isEditing && formData.id) {
         url = `/api/products/${formData.id}`
-        method = 'PATCH'
+        method = "PATCH"
       }
 
       response = await fetch(url, {
@@ -475,8 +496,49 @@ export default function TableModalProductData({
               required
               error={errors.discount}
             />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Description <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Enter product description..."
+                className="w-full p-3 border border-gray-300 rounded-md 
+               focus:outline-none focus:ring-focusborderring 
+               focus:border-focusborder resize-none"
+                rows={3}
+                disabled={isSubmitting}
+              />
+              {errors.description && (
+                <p className="text-red-500 text-sm">{errors.description}</p>
+              )}
+            </div>
 
 
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Status <span className="text-red-500">*</span>
+              </label>
+              <div className="flex items-center space-x-3 p-3 border border-gray-300 rounded-md bg-gray-50">
+                <Switch
+                  checked={formData.status === "active"}
+                  onCheckedChange={handleStatusChange}
+                  disabled={isSubmitting}
+                />
+                <span
+                  className={`text-sm font-medium ${formData.status === "active" ? "text-green-600" : "text-red-600"}`}
+                >
+                  {formData.status === "active" ? "Active" : "Inactive"}
+                </span>
+              </div>
+              {errors.status && <p className="text-red-500 text-sm">{errors.status}</p>}
+            </div>
           </div>
 
           <div className="space-y-2">
