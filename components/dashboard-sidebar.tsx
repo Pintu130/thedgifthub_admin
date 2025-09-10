@@ -21,6 +21,7 @@ import {
   CreditCard,
   Search,
   Package,
+  BadgePercent,
 } from "lucide-react"
 import { MdCategory } from "react-icons/md"
 import Image from "next/image"
@@ -133,6 +134,12 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
       icon: MdCategory,
       href: "/categories",
       active: pathname === "/categories",
+    },
+    {
+      label: "Offers",
+      icon: BadgePercent,
+      href: "/offers",
+      active: pathname === "/offers",
     },
     {
       label: "Users",
