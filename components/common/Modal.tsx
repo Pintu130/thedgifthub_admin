@@ -74,7 +74,8 @@ export default function Modal({
             onClick={onClose}
             className={`${confirmVariant === "destructive" 
               ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" 
-              : "bg-primary text-primary-foreground hover:bg-primary/90"} transition-colors`}
+              : ""} transition-colors`}
+              // bg-primary text-primary-foreground hover:bg-primary/90
             aria-label="Close"
           >
             <X size={20} />
