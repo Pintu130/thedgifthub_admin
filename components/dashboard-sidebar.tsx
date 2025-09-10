@@ -58,71 +58,71 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
   ]
 
   // Home dropdown pages
-  const homeDropdownPages: RouteConfig[] = [
-    {
-      label: "Home",
-      icon: Home,
-      href: "/home",
-      active: pathname === "/home",
-    },
-  ]
+  // const homeDropdownPages: RouteConfig[] = [
+  //   {
+  //     label: "Home",
+  //     icon: Home,
+  //     href: "/home",
+  //     active: pathname === "/home",
+  //   },
+  // ]
 
   // Pages dropdown
-  const pagesDropdownPages: RouteConfig[] = [
-    {
-      label: "Welcome",
-      icon: Smile,
-      href: "/welcome",
-      active: pathname === "/welcome",
-    },
-    {
-      label: "Footer",
-      icon: Settings,
-      href: "/footer",
-      active: pathname === "/footer",
-    },
-    {
-      label: "Hero Section",
-      icon: Home,
-      href: "/hero-section",
-      active: pathname === "/hero-section",
-    },
-  ]
+  // const pagesDropdownPages: RouteConfig[] = [
+  //   {
+  //     label: "Welcome",
+  //     icon: Smile,
+  //     href: "/welcome",
+  //     active: pathname === "/welcome",
+  //   },
+  //   {
+  //     label: "Footer",
+  //     icon: Settings,
+  //     href: "/footer",
+  //     active: pathname === "/footer",
+  //   },
+  //   {
+  //     label: "Hero Section",
+  //     icon: Home,
+  //     href: "/hero-section",
+  //     active: pathname === "/hero-section",
+  //   },
+  // ]
 
   // Payments dropdown
-  const paymentsDropdownPages: RouteConfig[] = [
-    {
-      label: "Sponsors Payments",
-      icon: Handshake,
-      href: "/payments/sponsors",
-      active: pathname === "/payments/sponsors",
-    },
-    {
-      label: "Attendee Payments",
-      icon: UserCheck,
-      href: "/payments/attendee",
-      active: pathname === "/payments/attendee",
-    },
-  ]
+  // const paymentsDropdownPages: RouteConfig[] = [
+  //   {
+  //     label: "Sponsors Payments",
+  //     icon: Handshake,
+  //     href: "/payments/sponsors",
+  //     active: pathname === "/payments/sponsors",
+  //   },
+  //   {
+  //     label: "Attendee Payments",
+  //     icon: UserCheck,
+  //     href: "/payments/attendee",
+  //     active: pathname === "/payments/attendee",
+  //   },
+  // ]
 
   // Registration dropdown
-  const registrationDropdownPages: RouteConfig[] = [
-    {
-      label: "Attendee",
-      icon: UserCheck,
-      href: "/attendee",
-      active: pathname === "/attendee",
-    },
-  ]
+  // const registrationDropdownPages: RouteConfig[] = [
+  //   {
+  //     label: "Attendee",
+  //     icon: UserCheck,
+  //     href: "/attendee",
+  //     active: pathname === "/attendee",
+  //   },
+  // ]
 
   // Bottom section routes
   const bottomRoutes: RouteConfig[] = [
-    {
-      label: "SEO Management",
-      icon: Search,
-      href: "/seo-management",
-      active: pathname === "/seo-management",
-    },
+    // {
+    //   label: "SEO Management",
+    //   icon: Search,
+    //   href: "/seo-management",
+    //   active: pathname === "/seo-management",
+    // },
     {
       label: "Products",
       icon: Package,
@@ -166,18 +166,18 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
   // ]
 
   // Check if any dropdown pages are active
-  const isAnyHomePageActive = homeDropdownPages.some((page) => page.active)
-  const isAnyPagesPageActive = pagesDropdownPages.some((page) => page.active)
-  const isAnyPaymentsPageActive = paymentsDropdownPages.some((page) => page.active)
-  const isAnyRegistrationPageActive = registrationDropdownPages.some((page) => page.active)
+  // const isAnyHomePageActive = homeDropdownPages.some((page) => page.active)
+  // const isAnyPagesPageActive = pagesDropdownPages.some((page) => page.active)
+  // const isAnyPaymentsPageActive = paymentsDropdownPages.some((page) => page.active)
+  // const isAnyRegistrationPageActive = registrationDropdownPages.some((page) => page.active)
 
   // Auto-open dropdowns when nested pages are active
-  useEffect(() => {
-    if (isAnyHomePageActive) setHomeDropdownOpen(true)
-    if (isAnyPagesPageActive) setPagesDropdownOpen(true)
-    if (isAnyPaymentsPageActive) setPaymentsDropdownOpen(true)
-    if (isAnyRegistrationPageActive) setRegistrationDropdownOpen(true)
-  }, [isAnyHomePageActive, isAnyPagesPageActive, isAnyPaymentsPageActive, isAnyRegistrationPageActive])
+  // useEffect(() => {
+  //   // if (isAnyHomePageActive) setHomeDropdownOpen(true)
+  //   // if (isAnyPagesPageActive) setPagesDropdownOpen(true)
+  //   // if (isAnyPaymentsPageActive) setPaymentsDropdownOpen(true)
+  //   // if (isAnyRegistrationPageActive) setRegistrationDropdownOpen(true)
+  // }, [])
 
   const renderDropdownButton = (
     label: string,
@@ -265,20 +265,20 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
           {renderRoutes(mainRoutes)}
 
           {/* 2. Home Dropdown */}
-          {renderDropdownButton("Home", Home, homeDropdownOpen, setHomeDropdownOpen, isAnyHomePageActive, homeDropdownPages.length > 0)}
-          {homeDropdownOpen && renderDropdownChildren(homeDropdownPages)}
+          {/* {renderDropdownButton("Home", Home, homeDropdownOpen, setHomeDropdownOpen, isAnyHomePageActive, homeDropdownPages.length > 0)} */}
+          {/* {homeDropdownOpen && renderDropdownChildren(homeDropdownPages)} */}
 
           {/* 3. Pages Dropdown */}
-          {renderDropdownButton("Pages", Folder, pagesDropdownOpen, setPagesDropdownOpen, isAnyPagesPageActive, pagesDropdownPages.length > 0)}
-          {pagesDropdownOpen && renderDropdownChildren(pagesDropdownPages)}
+          {/* {renderDropdownButton("Pages", Folder, pagesDropdownOpen, setPagesDropdownOpen, isAnyPagesPageActive, pagesDropdownPages.length > 0)} */}
+          {/* {pagesDropdownOpen && renderDropdownChildren(pagesDropdownPages)} */}
 
           {/* 4. Payments Dropdown */}
-          {renderDropdownButton("Payments", CreditCard, paymentsDropdownOpen, setPaymentsDropdownOpen, isAnyPaymentsPageActive, paymentsDropdownPages.length > 0)}
-          {paymentsDropdownOpen && renderDropdownChildren(paymentsDropdownPages)}
+          {/* {renderDropdownButton("Payments", CreditCard, paymentsDropdownOpen, setPaymentsDropdownOpen, isAnyPaymentsPageActive, paymentsDropdownPages.length > 0)} */}
+          {/* {paymentsDropdownOpen && renderDropdownChildren(paymentsDropdownPages)} */}
 
           {/* 5. Registration Dropdown */}
-          {renderDropdownButton("Registration", UserPlus, registrationDropdownOpen, setRegistrationDropdownOpen, isAnyRegistrationPageActive, registrationDropdownPages.length > 0)}
-          {registrationDropdownOpen && renderDropdownChildren(registrationDropdownPages)}
+          {/* {renderDropdownButton("Registration", UserPlus, registrationDropdownOpen, setRegistrationDropdownOpen, isAnyRegistrationPageActive, registrationDropdownPages.length > 0)} */}
+          {/* {registrationDropdownOpen && renderDropdownChildren(registrationDropdownPages)} */}
 
           {/* 6. Bottom Routes */}
           {renderRoutes(bottomRoutes)}
