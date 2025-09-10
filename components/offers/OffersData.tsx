@@ -7,7 +7,7 @@ import "ag-grid-community/styles/ag-grid.css"
 import "ag-grid-community/styles/ag-theme-alpine.css"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Loader from "@/components/loading-screen"
-import { Pencil, Plus, Search, Trash2 } from "lucide-react"
+import { Pencil, Plus, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Modal from "@/components/common/Modal"
 import type { ColDef } from "ag-grid-community"
@@ -248,7 +248,7 @@ const OffersData = () => {
             <img
               src={imageSrc}
               alt="Offer"
-              className="h-10 w-10 object-cover rounded-md"
+              className="w-10 h-10 rounded-sm border object-cover"
               onError={(e) => {
                 const target = e.target as HTMLImageElement
                 target.src = "/placeholder.svg?height=40&width=40"
@@ -295,24 +295,25 @@ const OffersData = () => {
       field: "actions",
       width: 150,
       cellRenderer: (params: any) => (
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center justify-center gap-2 h-full w-full">
+          {/* View button (optional) */}
           {/* <button
             onClick={() => handleView(params.data)}
-            className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full"
+            className="p-1 rounded-full bg-green-50 text-green-600 hover:bg-green-100 transition"
             title="View"
           >
             <Eye className="h-4 w-4" />
           </button> */}
           <button
             onClick={() => handleEdit(params.data)}
-            className="p-1.5 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-full"
+            className="p-1 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition"
             title="Edit"
           >
             <Pencil className="h-4 w-4" />
           </button>
           <button
             onClick={() => handleDelete(params.data)}
-            className="p-1.5 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-full"
+            className="p-1 rounded-full bg-red-50 text-red-600 hover:bg-red-100 transition"
             title="Delete"
           >
             <Trash2 className="h-4 w-4" />
@@ -323,59 +324,81 @@ const OffersData = () => {
   ]
 
   return (
-    <div className="container mx-auto p-4">
-      <Card className="mb-6">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Special Offers</CardTitle>
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search offers..."
-                value={searchText}
-                onChange={onSearchTextChange}
-                className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            </div>
-            <Button onClick={() => toggleModal(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Offer
-            </Button>
+    <div className="space-y-4 text-[#333]">
+      <div className="px-2 mb-4">
+        <h1 className="text-3xl font-bold tracking-tight text-customButton-text">Offers</h1>
+        <p className="text-sm text-[#7A6C53] mt-1">View, manage, and organize all offers</p>
+      </div>
+
+      <Card className="shadow-md border border-gray-200">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center px-6 pt-4 gap-4">
+          <CardHeader className="p-0">
+            <CardTitle className="text-lg text-gray-800">All Offers</CardTitle>
+            <p className="text-sm text-gray-600 mt-1">{offers.length} total offers</p>
+          </CardHeader>
+
+          {/* Search + Add Offer */}
+          <div className="flex gap-2 items-center">
+            <input
+              type="text"
+              placeholder="Search offers..."
+              className="border outline-none p-2 rounded-md shadow-sm w-52 lg:w-64"
+              value={searchText}
+              onChange={onSearchTextChange}
+            />
+            <button
+              onClick={() => toggleModal(true)}
+              className="px-4 py-2 rounded-md bg-gradient-to-r 
+                                       from-customButton-gradientFrom
+                                       to-customButton-gradientTo
+                                       text-customButton-text
+                                       hover:bg-customButton-hoverBg
+                                       hover:text-customButton-hoverText font-semibold transition flex items-center gap-2"
+              aria-label="Add new offer"
+            >
+              <Plus size={16} />
+              <span>Add Offer</span>
+            </button>
           </div>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
+        </div>
+
+        <CardContent className="pt-4">
+          {isLoading && (
             <div className="flex justify-center items-center h-64">
               <Loader />
             </div>
-          ) : isError ? (
-            <div className="text-center py-10">
-              <p className="text-red-500">Failed to load offers. Please try again.</p>
+          )}
+          {isError && (
+            <div className="text-center py-4">
+              <p className="text-red-600">Failed to load offers. Please try again.</p>
               <Button
                 variant="outline"
-                className="mt-4"
+                className="mt-3"
                 onClick={fetchOffers}
               >
                 Retry
               </Button>
             </div>
-          ) : (
-            <div className="ag-theme-alpine" style={{ height: '300px', width: '100%' }}>
+          )}
+          {!isLoading && !isError && (
+            <div className="ag-theme-alpine w-full">
               <AgGridReact
                 ref={gridRef}
                 rowData={offers}
                 columnDefs={columnDefs}
                 defaultColDef={{
-                  sortable: true,
+                  flex: 1,
                   resizable: true,
-                  filter: true,
+                  sortable: true,
+                  cellClass: "text-center text-[#2D3748] bg-white",
+                  headerClass: "custom-header",
                 }}
                 pagination={true}
                 paginationPageSize={paginationPageSize}
+                domLayout="autoHeight"
+                suppressCellSelection={true}
                 onGridReady={onGridReady}
-                rowHeight={60}
-                suppressCellFocus={true}
+                rowHeight={50}
               />
             </div>
           )}
@@ -387,9 +410,9 @@ const OffersData = () => {
         key={formData.id || 'new-offer'}
         isModalVisible={isModalVisible}
         onClose={() => toggleModal(false)}
-        title={formData.id ? "Edit Offer" : "Add New Offer"}
+        title={formData.id ? "Edit Offer" : "Add Offer"}
         closeLabel="Cancel"
-        saveLabel={isSubmitting ? "Saving..." : (formData.id ? "Update Offer" : "Add Offer")}
+        saveLabel={formData.id ? "Update" : "Save"}
         formData={formData}
         setFormData={setFormData}
         getTotalOffers={fetchOffers}
