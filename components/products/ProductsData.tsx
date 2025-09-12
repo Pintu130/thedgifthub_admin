@@ -14,21 +14,25 @@ import TableModalProductData from "@/app/products/TableModalProductData"
 import type { ColDef } from "ag-grid-community"
 import type { Product } from "@/lib/types/product"
 
+// types/product.ts
 export interface ProductFormData {
   id?: string
   name: string
-  amount: string // input → string
-  discount: string // input → string
-  originalPrice: string // 👈 input → string
+  amount: string
+  discount: string
+  originalPrice: string
   availableOffers: string
   highlights: string
+  categoryId?: string
   description: string
   status: "active" | "inactive"
   images: Array<File | string>
   imagesPreviews: string[]
-  productPrice: number // computed / saved as number
-  discountPercentage: number // computed / saved as number
+  productPrice: number
+  discountPercentage: number
 }
+
+
 
 const ProductData = () => {
   const { toast } = useToast()
@@ -38,9 +42,12 @@ const ProductData = () => {
   const [searchText, setSearchText] = useState("")
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [formData, setFormData] = useState<ProductFormData>({
+    id: "",
     name: "",
+    categoryId: "",
     amount: "",
     discount: "",
+    originalPrice: "",
     availableOffers: "",
     highlights: "",
     description: "",
@@ -48,9 +55,11 @@ const ProductData = () => {
     images: [],
     imagesPreviews: [],
     productPrice: 0,
-    originalPrice: "",
     discountPercentage: 0,
   })
+
+  const [categories, setCategories] = useState<Array<{ id: string, name: string }>>([])
+
 
   // Delete confirmation modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
@@ -104,6 +113,7 @@ const ProductData = () => {
   const toggleModal = useCallback(() => {
     setFormData({
       name: "",
+      categoryId: '',
       amount: "",
       discount: "",
       availableOffers: "",
@@ -123,6 +133,7 @@ const ProductData = () => {
   const handleEdit = useCallback((product: Product) => {
     setFormData({
       id: product.id,
+      categoryId: product.categoryId || '',
       name: product.productName || "",
       amount: product.productPrice?.toString() || "0",
       discount: product.discountPercentage?.toString() || "0",
@@ -186,9 +197,37 @@ const ProductData = () => {
     }
   }
 
+  // Fetch categories
+  const fetchCategories = useCallback(async () => {
+    try {
+      const response = await fetch('/api/categories')
+      if (!response.ok) {
+        throw new Error('Failed to fetch categories')
+      }
+      const data = await response.json()
+      // Map categories to include only id and name fields
+      const formattedCategories = data.map((category: any) => ({
+        id: category.id,
+        name: category.name
+      }))
+      setCategories(formattedCategories)
+    } catch (error) {
+      console.error("Error fetching categories:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load categories. Please try again later.",
+      })
+    }
+  }, [toast])
+
   const refreshGridData = useCallback(() => {
     fetchProducts()
   }, [fetchProducts])
+
+  useEffect(() => {
+    fetchCategories()
+  }, [fetchCategories])
 
   // ✅ Column Definitions
   const columnDefs: ColDef[] = [
@@ -242,8 +281,8 @@ const ProductData = () => {
       cellRenderer: (params: any) => (
         <span
           className={`px-2 py-1 text-xs rounded-full ${params.value === "active"
-              ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800"
+            ? "bg-green-100 text-green-800"
+            : "bg-red-100 text-red-800"
             }`}
         >
           {params.value === "active" ? "Active" : "Inactive"}
@@ -291,8 +330,8 @@ const ProductData = () => {
       cellRenderer: (params: any) => (
         <span
           className={`px-2 py-1 text-xs rounded-full ${params.value > 0
-              ? "bg-green-100 text-green-800"
-              : "bg-gray-100 text-gray-800"
+            ? "bg-green-100 text-green-800"
+            : "bg-gray-100 text-gray-800"
             }`}
         >
           {params.value || 0}%
@@ -411,8 +450,9 @@ const ProductData = () => {
         closeLabel="Cancel"
         saveLabel={formData.id ? "Update" : "Save"}
         formData={formData}
-        setFormData={setFormData}
+        setFormData={setFormData} // ✅ now type matches
         getTotalProducts={refreshGridData}
+        categories={categories} // Passing the categories from state
       />
 
       {/* Delete Confirmation Modal */}

@@ -24,6 +24,7 @@ export interface ProductFormData {
   imagesPreviews: string[]
   productPrice: number // computed / saved as number
   discountPercentage: number // computed / saved as number
+  categoryId?: string
 }
 
 interface FormErrors {
@@ -35,17 +36,27 @@ interface FormErrors {
   images?: string
   description?: string
   status?: string
+  categoryId?: string
+}
+
+interface Category {
+  id: string
+  name: string
 }
 
 interface Props {
   isModalVisible: boolean
   onClose: () => void
   title: string
+  categories: Category[]
+
   closeLabel: string
   saveLabel: string
   formData: ProductFormData
   setFormData: React.Dispatch<React.SetStateAction<ProductFormData>>
   getTotalProducts: () => void
+
+
 }
 
 export default function TableModalProductData({
@@ -56,6 +67,7 @@ export default function TableModalProductData({
   saveLabel,
   formData,
   setFormData,
+  categories,
   getTotalProducts,
 }: Props) {
   const { toast } = useToast()
@@ -86,7 +98,7 @@ export default function TableModalProductData({
     }
   }, [isModalVisible, formData, setFormData])
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData({ ...formData, [name]: value })
 
@@ -94,6 +106,7 @@ export default function TableModalProductData({
       setErrors((prev) => ({ ...prev, [name]: undefined }))
     }
   }
+
 
   const handleStatusChange = (checked: boolean) => {
     const newStatus = checked ? "active" : "inactive"
@@ -235,6 +248,11 @@ export default function TableModalProductData({
       newErrors.description = "Description is required"
     }
 
+    if (!formData.categoryId?.trim()) {
+      newErrors.categoryId = "Category is required"
+    }
+
+
     const tempDiv1 = document.createElement("div")
     tempDiv1.innerHTML = formData.availableOffers || ""
     const offersContent = tempDiv1.textContent || tempDiv1.innerText || ""
@@ -280,6 +298,7 @@ export default function TableModalProductData({
         highlights: formData.highlights,
         description: formData.description,
         status: formData.status,
+        categoryId: formData.categoryId, 
       }
 
       // Append all non-image fields
@@ -387,6 +406,26 @@ export default function TableModalProductData({
 
       <div>
         <div className="space-y-6 p-6">
+          <div className="w-full space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Category <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="categoryId"
+              value={formData.categoryId || ''}
+              onChange={handleChange}
+              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.categoryId ? 'border-red-500' : 'border-gray-300'}`}
+              disabled={isSubmitting}
+            >
+              <option value="">Select a category</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+            {errors.categoryId && <p className="text-red-500 text-sm mt-1">{errors.categoryId}</p>}
+          </div>
           <div className="space-y-3">
             <label className="block text-sm font-medium text-gray-700">
               Product Images (Min: 2, Max: 4) {!isEditing && <span className="text-red-500">*</span>}
