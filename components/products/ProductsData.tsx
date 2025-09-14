@@ -59,6 +59,7 @@ const ProductData = () => {
   })
 
   const [categories, setCategories] = useState<Array<{ id: string, name: string }>>([])
+  console.log("🚀 ~ ProductData ~ categories:", categories)
 
 
   // Delete confirmation modal state
@@ -526,6 +527,11 @@ const ProductData = () => {
                   {viewProduct.discountPercentage || 0}%
                 </span>
               </p>
+              <p>
+                <span className="font-semibold text-[#A30000]">Category Name:</span>{" "}
+                {categories.find((cat) => cat.id === viewProduct.categoryId)?.name || "N/A"}
+              </p>
+
             </div>
 
             {viewProduct.description && (

@@ -49,14 +49,11 @@ interface Props {
   onClose: () => void
   title: string
   categories: Category[]
-
   closeLabel: string
   saveLabel: string
   formData: ProductFormData
   setFormData: React.Dispatch<React.SetStateAction<ProductFormData>>
   getTotalProducts: () => void
-
-
 }
 
 export default function TableModalProductData({
@@ -73,7 +70,6 @@ export default function TableModalProductData({
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
-
   const imageInputRef = useRef<HTMLInputElement>(null)
 
   const isEditing = !!formData.id
@@ -107,7 +103,6 @@ export default function TableModalProductData({
     }
   }
 
-
   const handleStatusChange = (checked: boolean) => {
     const newStatus = checked ? "active" : "inactive"
     setFormData({ ...formData, status: newStatus })
@@ -123,6 +118,7 @@ export default function TableModalProductData({
     const files = Array.from(e.target.files)
     const currentImages = Array.isArray(formData.images) ? [...formData.images] : []
     const currentPreviews = Array.isArray(formData.imagesPreviews) ? [...formData.imagesPreviews] : []
+
     const validFiles: File[] = []
     const newPreviews: string[] = []
 
@@ -252,11 +248,9 @@ export default function TableModalProductData({
       newErrors.categoryId = "Category is required"
     }
 
-
     const tempDiv1 = document.createElement("div")
     tempDiv1.innerHTML = formData.availableOffers || ""
     const offersContent = tempDiv1.textContent || tempDiv1.innerText || ""
-
     if (!offersContent.trim()) {
       newErrors.availableOffers = "Available offers is required"
     }
@@ -264,7 +258,6 @@ export default function TableModalProductData({
     const tempDiv2 = document.createElement("div")
     tempDiv2.innerHTML = formData.highlights || ""
     const highlightsContent = tempDiv2.textContent || tempDiv2.innerText || ""
-
     if (!highlightsContent.trim()) {
       newErrors.highlights = "Highlights is required"
     }
@@ -294,12 +287,14 @@ export default function TableModalProductData({
         productPrice: Number.parseFloat(formData.amount) || 0,
         originalPrice: Number.parseFloat(formData.originalPrice) || 0,
         discountPercentage: Number.parseFloat(formData.discount) || 0,
+        categoryId: formData.categoryId, // ✅ Include categoryId
         availableOffers: formData.availableOffers,
         highlights: formData.highlights,
         description: formData.description,
         status: formData.status,
-        categoryId: formData.categoryId, 
       }
+
+      console.log("Submitting product data:", productData) // ✅ Debug log
 
       // Append all non-image fields
       Object.entries(productData).forEach(([key, value]) => {
@@ -404,213 +399,231 @@ export default function TableModalProductData({
     >
       {isSubmitting && <Loader />}
 
-      <div>
-        <div className="space-y-6 p-6">
-          <div className="w-full space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Category <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="categoryId"
-              value={formData.categoryId || ''}
-              onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.categoryId ? 'border-red-500' : 'border-gray-300'}`}
-              disabled={isSubmitting}
+      <div className="!space-y-4 p-3">
+        {/* Category */}
+        <div className="w-full space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Category <span className="text-red-500">*</span>
+          </label>
+          <select
+            name="categoryId"
+            value={formData.categoryId || ""}
+            onChange={handleChange}
+            className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.categoryId ? "border-red-500" : "border-gray-300"
+              }`}
+            disabled={isSubmitting}
+          >
+            <option value="">Select a category</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+          {errors.categoryId && (
+            <p className="text-red-500 text-sm mt-1">{errors.categoryId}</p>
+          )}
+        </div>
+
+        {/* Product Images */}
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-gray-700">
+            Product Images (Min: 2, Max: 4){" "}
+            {!isEditing && <span className="text-red-500">*</span>}
+          </label>
+
+          {/* Custom grid 30% : 70% */}
+          <div className="grid grid-cols-1 lg:grid-cols-[30%_70%] gap-6">
+            {/* Upload box (30%) */}
+            <div
+              className={`border ${errors.images ? "border-red-500" : "border-gray-300 border-dashed"
+                } rounded-lg p-4 hover:bg-gray-50 transition cursor-pointer flex flex-col items-center justify-center min-h-[150px] ${formData.images && formData.images.length >= 4
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
+                }`}
+              onClick={
+                formData.images && formData.images.length >= 4
+                  ? undefined
+                  : triggerImageUpload
+              }
             >
-              <option value="">Select a category</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-            {errors.categoryId && <p className="text-red-500 text-sm mt-1">{errors.categoryId}</p>}
-          </div>
-          <div className="space-y-3">
-            <label className="block text-sm font-medium text-gray-700">
-              Product Images (Min: 2, Max: 4) {!isEditing && <span className="text-red-500">*</span>}
-            </label>
+              <input
+                type="file"
+                ref={imageInputRef}
+                className="hidden"
+                accept="image/*"
+                multiple
+                onChange={handleImageChange}
+                disabled={
+                  isSubmitting || (formData.images && formData.images.length >= 4)
+                }
+              />
+              <Plus className="h-10 w-10 text-gray-400 mb-2" />
+              <p className="text-xs text-gray-500 text-center">
+                {formData.images && formData.images.length >= 4
+                  ? "Maximum 4 images uploaded"
+                  : `Click to upload (${formData.images?.length || 0}/4)`}
+              </p>
+            </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div
-                  className={`border ${errors.images ? "border-red-500" : "border-gray-300 border-dashed"
-                    } rounded-lg p-6 hover:bg-gray-50 transition cursor-pointer flex flex-col items-center justify-center min-h-[200px] ${formData.images && formData.images.length >= 4 ? "opacity-50 cursor-not-allowed" : ""
-                    }`}
-                  onClick={formData.images && formData.images.length >= 4 ? undefined : triggerImageUpload}
-                >
-                  <input
-                    type="file"
-                    ref={imageInputRef}
-                    className="hidden"
-                    accept="image/*"
-                    multiple
-                    onChange={handleImageChange}
-                    disabled={isSubmitting || (formData.images && formData.images.length >= 4)}
-                  />
-
-                  <Plus className="h-12 w-12 text-gray-400 mb-4" />
-                  <p className="text-sm text-gray-500 text-center">
-                    {formData.images && formData.images.length >= 4
-                      ? "Maximum 4 images uploaded"
-                      : `Click to upload product images (${formData.images?.length || 0}/4)`}
-                    <br />
-                    <span className="text-xs text-gray-400">SVG, PNG, JPG up to 5MB each</span>
-                  </p>
-                </div>
-                {errors.images && <p className="text-red-500 text-sm">{errors.images}</p>}
-              </div>
-
-              <div className="space-y-4">
-                <h4 className="text-sm font-medium text-gray-700">
-                  Uploaded Images ({formData.imagesPreviews?.length || 0}/4)
-                </h4>
-                <div className="grid grid-cols-2 gap-3 h-[240px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300">
-                  {formData.imagesPreviews && formData.imagesPreviews.length > 0 ? (
-                    formData.imagesPreviews.map((preview, index) => (
-                      <div key={index} className="relative group">
-                        <img
-                          src={preview || "/placeholder.svg"}
-                          alt={`Product ${index + 1}`}
-                          className="w-full h-28 object-cover rounded-lg border border-gray-200"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(index)}
-                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition-colors z-10"
-                          disabled={isSubmitting}
-                        >
-                          <X size={12} />
-                        </button>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="col-span-2 flex items-center justify-center text-center text-gray-400 text-sm py-8">
-                      No images uploaded yet
+            {/* Preview images (70%) */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-gray-700">
+                Uploaded Images ({formData.imagesPreviews?.length || 0}/4)
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {formData.imagesPreviews && formData.imagesPreviews.length > 0 ? (
+                  formData.imagesPreviews.map((preview, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={preview || "/placeholder.svg"}
+                        alt={`Product ${index + 1}`}
+                        className="w-full h-28 object-cover rounded-md border border-gray-200"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                        disabled={isSubmitting}
+                      >
+                        <X size={10} />
+                      </button>
                     </div>
-                  )}
-                </div>
+                  ))
+                ) : (
+                  <div className="col-span-4 flex items-center justify-center text-center text-gray-400 text-sm py-6">
+                    No images uploaded yet
+                  </div>
+                )}
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <FormInput
-              label="Product Name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Enter product name"
-              required
-              error={errors.name}
-            />
 
-            <FormInput
-              label="Original Price ($)"
-              type="number"
-              name="originalPrice"
-              value={formData.originalPrice?.toString() || ""}
-              onChange={handleChange}
-              placeholder="e.g. 35.00"
-            />
+        {/* Product details */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <FormInput
+            label="Product Name"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            placeholder="Enter product name"
+            required
+            error={errors.name}
+          />
+          <FormInput
+            label="Original Price ($)"
+            type="number"
+            name="originalPrice"
+            value={formData.originalPrice?.toString() || ""}
+            onChange={handleChange}
+            placeholder="e.g. 35.00"
+          />
+          <FormInput
+            label="Amount ($)"
+            name="amount"
+            type="number"
+            value={formData.amount || ""}
+            onChange={handleChange}
+            placeholder="e.g. 26.99"
+            required
+            error={errors.amount}
+          />
+          <FormInput
+            label="Discount (%)"
+            name="discount"
+            type="number"
+            value={formData.discount || ""}
+            onChange={handleChange}
+            placeholder="e.g. 10"
+            required
+            error={errors.discount}
+          />
+        </div>
 
-            <FormInput
-              label="Amount ($)"
-              name="amount"
-              type="number"
-              value={formData.amount || ""}
+        {/* Description & Status */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Description <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              name="description"
+              value={formData.description}
               onChange={handleChange}
-              placeholder="e.g. 26.99"
-              required
-              error={errors.amount}
+              placeholder="Enter product description..."
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y h-30"
+              // 👆 resize only vertical & default height
+              disabled={isSubmitting}
             />
-
-            <FormInput
-              label="Discount (%)"
-              name="discount"
-              type="number"
-              value={formData.discount || ""}
-              onChange={handleChange}
-              placeholder="e.g. 10"
-              required
-              error={errors.discount}
-            />
+            {errors.description && (
+              <p className="text-red-500 text-sm">{errors.description}</p>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Description <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                placeholder="Enter product description..."
-                className="w-full p-3 border border-gray-300 rounded-md 
-               focus:outline-none focus:ring-focusborderring 
-               focus:border-focusborder resize-none"
-                rows={3}
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Status <span className="text-red-500">*</span>
+            </label>
+            <div className="flex items-center space-x-3 p-3 border border-gray-300 rounded-md bg-gray-50">
+              <Switch
+                checked={formData.status === "active"}
+                onCheckedChange={handleStatusChange}
                 disabled={isSubmitting}
               />
-              {errors.description && (
-                <p className="text-red-500 text-sm">{errors.description}</p>
-              )}
+              <span
+                className={`text-sm font-medium ${formData.status === "active" ? "text-green-600" : "text-red-600"
+                  }`}
+              >
+                {formData.status === "active" ? "Active" : "Inactive"}
+              </span>
             </div>
-
-
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Status <span className="text-red-500">*</span>
-              </label>
-              <div className="flex items-center space-x-3 p-3 border border-gray-300 rounded-md bg-gray-50">
-                <Switch
-                  checked={formData.status === "active"}
-                  onCheckedChange={handleStatusChange}
-                  disabled={isSubmitting}
-                />
-                <span
-                  className={`text-sm font-medium ${formData.status === "active" ? "text-green-600" : "text-red-600"}`}
-                >
-                  {formData.status === "active" ? "Active" : "Inactive"}
-                </span>
-              </div>
-              {errors.status && <p className="text-red-500 text-sm">{errors.status}</p>}
-            </div>
+            {errors.status && (
+              <p className="text-red-500 text-sm">{errors.status}</p>
+            )}
           </div>
+        </div>
 
+        {/* Offers & Highlights side by side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
               Available Offers <span className="text-red-500">*</span>
             </label>
-            <div className="w-full max-h-[250px] overflow-y-auto border rounded-md scrollbar-thin scrollbar-thumb-gray-300">
+            <div className="w-full min-h-[200px] border rounded-md">
               <AdvancedCKEditor
                 data={formData.availableOffers || ""}
                 onChange={handleOffersEditorChange}
-                placeholder="Enter available offers and promotions..."
+                placeholder="Enter available offers..."
                 disabled={isSubmitting}
               />
             </div>
-            {errors.availableOffers && <p className="text-red-500 text-sm">{errors.availableOffers}</p>}
+            {errors.availableOffers && (
+              <p className="text-red-500 text-sm">{errors.availableOffers}</p>
+            )}
           </div>
 
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
               Highlights <span className="text-red-500">*</span>
             </label>
-            <div className="w-full max-h-[250px] overflow-y-auto border rounded-md scrollbar-thin scrollbar-thumb-gray-300">
+            <div className="w-full min-h-[200px] border rounded-md">
               <AdvancedCKEditor
                 data={formData.highlights || ""}
                 onChange={handleHighlightsEditorChange}
-                placeholder="Enter product highlights and key features..."
+                placeholder="Enter product highlights..."
                 disabled={isSubmitting}
               />
             </div>
-            {errors.highlights && <p className="text-red-500 text-sm">{errors.highlights}</p>}
+            {errors.highlights && (
+              <p className="text-red-500 text-sm">{errors.highlights}</p>
+            )}
           </div>
         </div>
       </div>
     </Modal>
+
   )
 }

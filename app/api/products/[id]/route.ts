@@ -26,12 +26,13 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   try {
     const formData = await request.formData()
 
-    // Extract text fields
+    // Extract text fields including categoryId
     const productData: any = {
       productName: formData.get("productName") as string,
       productPrice: Number.parseFloat(formData.get("productPrice") as string) || 0,
       originalPrice: Number.parseFloat(formData.get("originalPrice") as string) || 0,
       discountPercentage: Number.parseFloat(formData.get("discountPercentage") as string) || 0,
+      categoryId: formData.get("categoryId") as string, // ✅ Added categoryId
       availableOffers: (formData.get("availableOffers") as string) || "",
       highlights: (formData.get("highlights") as string) || "",
       description: (formData.get("description") as string) || "",

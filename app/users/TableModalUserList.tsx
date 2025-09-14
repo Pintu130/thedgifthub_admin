@@ -186,59 +186,70 @@ export default function TableModalUserList({
 
   return (
     <Modal
-      isOpen={isModalVisible}
-      onClose={onClose}
-      onConfirm={handleSubmit}
-      title={title}
-      message=""
-      closeLabel={closeLabel}
-      confirmLabel={saveLabel}
-      isLoading={isLoading || isSubmitting}
-    >
-      {isLoading && <Loader />}
-      <div className="!space-y-4 py-4">
-        <FormInput
-          label="First Name"
-          name="firstName"
-          value={formData.firstName}
-          onChange={handleChange}
-          placeholder="Enter first name"
-          required
-          error={errors.firstName}
-        />
+  isOpen={isModalVisible}
+  onClose={onClose}
+  onConfirm={handleSubmit}
+  title={title}
+  message=""
+  closeLabel={closeLabel}
+  confirmLabel={saveLabel}
+  isLoading={isLoading || isSubmitting}
+  width="60rem" // wider modal for 2-column layout
+>
+  {isLoading && <Loader />}
 
-        <FormInput
-          label="Last Name"
-          name="lastName"
-          value={formData.lastName}
-          onChange={handleChange}
-          placeholder="Enter last name"
-          required
-          error={errors.lastName}
-        />
+  <div className="py-4">
+    {/* Responsive 2-column layout */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      
+      {/* First Name */}
+      <FormInput
+        label="First Name"
+        name="firstName"
+        value={formData.firstName}
+        onChange={handleChange}
+        placeholder="Enter first name"
+        required
+        error={errors.firstName}
+      />
 
-        <FormInput
-          label="Email"
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
-          placeholder="Enter email address"
-          required
-          error={errors.email}
-        />
+      {/* Last Name */}
+      <FormInput
+        label="Last Name"
+        name="lastName"
+        value={formData.lastName}
+        onChange={handleChange}
+        placeholder="Enter last name"
+        required
+        error={errors.lastName}
+      />
 
-        <FormInput
-          label="Phone Number"
-          name="phoneNumber"
-          type="tel"
-          value={formData.phoneNumber}
-          onChange={handleChange}
-          placeholder="Enter phone number"
-          required
-          error={errors.phoneNumber}
-        />
+      {/* Email */}
+      <FormInput
+        label="Email"
+        name="email"
+        type="email"
+        value={formData.email}
+        onChange={handleChange}
+        placeholder="Enter email address"
+        required
+        error={errors.email}
+      />
 
+      {/* Phone Number */}
+      <FormInput
+        label="Phone Number"
+        name="phoneNumber"
+        type="tel"
+        value={formData.phoneNumber}
+        onChange={handleChange}
+        placeholder="Enter phone number"
+        required
+        error={errors.phoneNumber}
+      />
+
+      {/* Address - full width */}
+      <div className="md:col-span-2">
         <FormTextarea
           label="Address"
           name="address"
@@ -249,28 +260,33 @@ export default function TableModalUserList({
           error={errors.address}
           rows={3}
         />
-
-        <FormInput
-          label="City"
-          name="city"
-          value={formData.city}
-          onChange={handleChange}
-          placeholder="Enter city"
-          required
-          error={errors.city}
-        />
-
-        <FormSelect
-          label="Gender"
-          name="gender"
-          value={formData.gender}
-          onChange={handleChange}
-          options={genderOptions}
-          placeholder="Select gender"
-          required
-          error={errors.gender}
-        />
       </div>
-    </Modal>
+
+      {/* City */}
+      <FormInput
+        label="City"
+        name="city"
+        value={formData.city}
+        onChange={handleChange}
+        placeholder="Enter city"
+        required
+        error={errors.city}
+      />
+
+      {/* Gender */}
+      <FormSelect
+        label="Gender"
+        name="gender"
+        value={formData.gender}
+        onChange={handleChange}
+        options={genderOptions}
+        placeholder="Select gender"
+        required
+        error={errors.gender}
+      />
+    </div>
+  </div>
+</Modal>
+
   )
 }

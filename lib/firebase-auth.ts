@@ -43,6 +43,7 @@ const AUTH_USER_KEY = 'authUser'
 export const signIn = async (email: string, password: string): Promise<UserCredential> => {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password)
+    console.log("🚀 ~ signIn ~ userCredential:", userCredential)
     // Store user data in localStorage
     if (userCredential.user) {
       const userData = {

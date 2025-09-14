@@ -44,7 +44,6 @@ export const uploadProductImages = async (images: Array<File | string>): Promise
 
       const downloadURL = await getDownloadURL(storageRef)
       console.log(`Download URL obtained for image ${index + 1}:`, downloadURL)
-
       return downloadURL
     } catch (error) {
       console.error(`Error uploading image ${index + 1}:`, error)
@@ -89,6 +88,7 @@ export const createProduct = async (productData: ProductFormData): Promise<strin
       productPrice: productData.productPrice,
       originalPrice: productData.originalPrice,
       discountPercentage: productData.discountPercentage,
+      categoryId: productData.categoryId, // ✅ Include categoryId
       images: imageUrls,
       availableOffers: productData.availableOffers,
       highlights: productData.highlights,
@@ -217,6 +217,7 @@ export const updateProduct = async (id: string, productData: Partial<ProductForm
 
     const updateData: Partial<Product> = {
       ...productData,
+      categoryId: productData.categoryId, // ✅ Ensure categoryId is included
       images: imageUrls,
       updatedAt: new Date().toISOString(),
     }
@@ -225,6 +226,8 @@ export const updateProduct = async (id: string, productData: Partial<ProductForm
     delete (updateData as any).imageUrls
     delete (updateData as any).images
     updateData.images = imageUrls
+
+    console.log("Updating product with data:", updateData) // ✅ Debug log
 
     // Update the product in Firestore
     await updateDoc(docRef, updateData)
@@ -246,7 +249,6 @@ export const deleteProduct = async (id: string): Promise<void> => {
   try {
     // First get the product to delete its images
     const product = await getProductById(id)
-
     if (product && product.images) {
       // Delete all images from storage
       await Promise.all(product.images.map((imageUrl) => deleteProductImage(imageUrl)))

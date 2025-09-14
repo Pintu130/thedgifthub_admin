@@ -199,19 +199,6 @@ export default function CategoryModal({
 
             <div className="!space-y-4 p-3">
                 <div>
-                    <FormInput
-                        label="Category Name"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleInputChange}
-                        placeholder="Enter category name"
-                        required
-                        error={errors.name}
-                    />
-
-                </div>
-
-                <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                         Category Image {!isEditing && <span className="text-red-500">*</span>}
                     </label>
@@ -270,6 +257,18 @@ export default function CategoryModal({
                         </div>
                     )}
                     {errors.image && <p className="mt-1 text-sm text-red-600">{errors.image}</p>}
+                </div>
+                <div>
+                    <FormInput
+                        label="Category Name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        placeholder="Enter category name"
+                        required
+                        error={errors.name}
+                    />
+
                 </div>
             </div>
         </Modal>

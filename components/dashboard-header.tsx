@@ -22,14 +22,14 @@ import Loader from "./loading-screen"
 export function DashboardHeader() {
   const { logout } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
-  const [user, setUser] = useState<{ name: string } | null>(null)
+  const [user, setUser] = useState<{ displayName: string } | null>(null)
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
 
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user")
+    const storedUser = localStorage.getItem("authUser")
     if (storedUser) {
       try {
         setUser(JSON.parse(storedUser))
@@ -97,7 +97,7 @@ export function DashboardHeader() {
         {/* User dropdown */}
         <div className="flex items-center gap-4">
           <span className="text-base font-medium hidden sm:inline text-black">
-            {user?.name}
+            {user?.displayName}
           </span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
