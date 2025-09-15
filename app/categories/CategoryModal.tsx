@@ -119,7 +119,7 @@ export default function CategoryModal({
             newErrors.name = "Category name is required"
         }
 
-        if (!isEditing && !formData.image && !formData.imagePreview) {
+        if (!formData.image && !formData.imagePreview) {
             newErrors.image = "Category image is required"
         }
 
@@ -200,7 +200,7 @@ export default function CategoryModal({
             <div className="!space-y-4 p-3">
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Category Image {!isEditing && <span className="text-red-500">*</span>}
+                        Category Image <span className="text-red-500">*</span>
                     </label>
                     <input
                         type="file"

@@ -22,6 +22,7 @@ import {
   Search,
   Package,
   BadgePercent,
+  ShoppingCart,
 } from "lucide-react"
 import { MdCategory } from "react-icons/md"
 import Image from "next/image"
@@ -124,16 +125,16 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
     //   active: pathname === "/seo-management",
     // },
     {
-      label: "Products",
-      icon: Package,
-      href: "/products",
-      active: pathname === "/products",
-    },
-    {
       label: "Categories",
       icon: MdCategory,
       href: "/categories",
       active: pathname === "/categories",
+    },
+    {
+      label: "Products",
+      icon: Package,
+      href: "/products",
+      active: pathname === "/products",
     },
     {
       label: "Offers",
@@ -142,10 +143,16 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
       active: pathname === "/offers",
     },
     {
-      label: "Users",
+      label: "Customers",
       icon: Users,
-      href: "/users",
-      active: pathname === "/users",
+      href: "/customers",
+      active: pathname === "/customers",
+    },
+    {
+      label: "Orders",
+      icon: ShoppingCart,
+      href: "/orders",
+      active: pathname === "/orders",
     },
   ]
 

@@ -11,6 +11,7 @@ export async function GET(request: Request) {
     const search = searchParams.get("search") || ""
     const sortBy = searchParams.get("sortBy") || "createdAt"
     const sortOrder = searchParams.get("sortOrder") || "desc"
+    const categoryId = searchParams.get("categoryId") || "" // ✅ new
 
     const result = await getProducts({
       page,
@@ -18,6 +19,7 @@ export async function GET(request: Request) {
       search,
       sortBy,
       sortOrder: sortOrder as "asc" | "desc",
+      categoryId, // ✅ pass to service
     } as PaginationParams)
 
     return NextResponse.json({
@@ -42,6 +44,7 @@ export async function GET(request: Request) {
     )
   }
 }
+
 
 // POST /api/products
 export async function POST(request: Request) {

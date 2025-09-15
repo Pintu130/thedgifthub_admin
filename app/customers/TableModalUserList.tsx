@@ -142,7 +142,7 @@ export default function TableModalUserList({
 
         toast({
           title: "Success",
-          description: "User updated successfully",
+          description: "Customer updated successfully",
         })
       } else {
         await addDoc(collection(db, "users"), {

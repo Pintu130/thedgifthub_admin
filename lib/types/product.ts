@@ -15,7 +15,8 @@ export interface Product {
   updatedAt: string
 }
 
-export interface ProductFormData extends Omit<Product, "id" | "createdAt" | "updatedAt" | "images"> {
+export interface ProductFormData
+  extends Omit<Product, "id" | "createdAt" | "updatedAt" | "images"> {
   id?: string
   images: File[] | string[]
 }
@@ -26,6 +27,7 @@ export interface PaginationParams {
   search?: string
   sortBy?: string
   sortOrder?: "asc" | "desc"
+  categoryId?: string   // 👈 added so no error
 }
 
 export interface ProductsResponse {

@@ -59,7 +59,6 @@ const ProductData = () => {
   })
 
   const [categories, setCategories] = useState<Array<{ id: string, name: string }>>([])
-  console.log("🚀 ~ ProductData ~ categories:", categories)
 
 
   // Delete confirmation modal state
@@ -68,17 +67,22 @@ const ProductData = () => {
   const [isDeleting, setIsDeleting] = useState(false)
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
   const [viewProduct, setViewProduct] = useState<Product | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<string>("")
 
   const gridRef = useRef<AgGridReact | null>(null)
-  const [paginationPageSize] = useState(10)
+  const [paginationPageSize] = useState(5)
   const [gridApi, setGridApi] = useState<any>(null)
 
   // ✅ Fetch products
+  // Fetch products (modified)
   const fetchProducts = useCallback(async () => {
     setIsLoading(true)
     setIsError(false)
     try {
-      const response = await fetch(`/api/products`)
+      const queryParams = new URLSearchParams()
+      if (selectedCategory) queryParams.append("categoryId", selectedCategory)
+
+      const response = await fetch(`/api/products?${queryParams.toString()}`)
       if (!response.ok) throw new Error("Failed to fetch products")
       const { data } = await response.json()
       setProducts(data || [])
@@ -94,7 +98,7 @@ const ProductData = () => {
     } finally {
       setIsLoading(false)
     }
-  }, [toast])
+  }, [toast, selectedCategory])
 
   useEffect(() => {
     fetchProducts()
@@ -392,6 +396,19 @@ const ProductData = () => {
 
           {/* Search + Add Product */}
           <div className="flex flex-wrap gap-2 items-center">
+            {/* Category Filter */}
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="border outline-none p-2 rounded-md shadow-sm w-52 cursor-pointer"
+            >
+              <option value="">All Categories</option>
+              {categories.map((cat) => (
+                <option className="cursor-pointer" key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
             <input
               type="text"
               placeholder="Search products..."

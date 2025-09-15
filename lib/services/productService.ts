@@ -110,21 +110,43 @@ export const createProduct = async (productData: ProductFormData): Promise<strin
 }
 
 // Get all products with pagination and search
-export const getProducts = async (params: PaginationParams = { page: 1, limit: 10 }) => {
+// ✅ Get all products with pagination, search, sort, category filter
+// Get all products with pagination, search and category filter
+export const getProducts = async (
+  params: PaginationParams & { categoryId?: string } = { page: 1, limit: 10 }
+) => {
   try {
-    const { page = 1, limit: pageLimit = 20, search = "" } = params
+    const {
+      page = 1,
+      limit: pageLimit = 20,
+      search = "",
+      sortBy = "createdAt",
+      sortOrder = "desc",
+      categoryId = "",
+    } = params
 
-    const constraints: QueryConstraint[] = [orderBy("createdAt", "desc")]
+    const constraints: QueryConstraint[] = []
 
-    // Add search constraint if provided
-    if (search) {
-      constraints.push(where("productName", ">=", search), where("productName", "<=", search + "\uf8ff"))
+    // ✅ Apply category filter
+    if (categoryId) {
+      constraints.push(where("categoryId", "==", categoryId))
+      // Firestore requires orderBy on filtered field
+      constraints.push(orderBy("categoryId"))
+      constraints.push(orderBy(sortBy, sortOrder))
+    } else {
+      constraints.push(orderBy(sortBy, sortOrder))
     }
 
-    // Create query
+    // ✅ Add search
+    if (search) {
+      constraints.push(where("productName", ">=", search))
+      constraints.push(where("productName", "<=", search + "\uf8ff"))
+    }
+
+    // Base query
     let q = query(collection(db, COLLECTION_NAME), ...constraints)
 
-    // Apply pagination
+    // ✅ Pagination
     if (page > 1) {
       const offset = (page - 1) * pageLimit
       const offsetQuery = query(collection(db, COLLECTION_NAME), ...constraints, limit(offset))
@@ -132,15 +154,20 @@ export const getProducts = async (params: PaginationParams = { page: 1, limit: 1
       const lastVisible = offsetSnapshot.docs[offsetSnapshot.docs.length - 1]
 
       if (lastVisible) {
-        q = query(collection(db, COLLECTION_NAME), ...constraints, startAfter(lastVisible), limit(pageLimit))
+        q = query(
+          collection(db, COLLECTION_NAME),
+          ...constraints,
+          startAfter(lastVisible),
+          limit(pageLimit)
+        )
       }
     } else {
       q = query(collection(db, COLLECTION_NAME), ...constraints, limit(pageLimit))
     }
 
+    // Fetch products
     const querySnapshot = await getDocs(q)
     const products: Product[] = []
-
     querySnapshot.forEach((doc) => {
       products.push({
         id: doc.id,
@@ -148,7 +175,7 @@ export const getProducts = async (params: PaginationParams = { page: 1, limit: 1
       } as Product)
     })
 
-    // Get total count for pagination
+    // ✅ Total count (without pagination limit)
     const totalQuery = query(collection(db, COLLECTION_NAME), ...constraints)
     const totalSnapshot = await getDocs(totalQuery)
     const total = totalSnapshot.size
@@ -167,6 +194,7 @@ export const getProducts = async (params: PaginationParams = { page: 1, limit: 1
     throw error
   }
 }
+
 
 // Get a single product by ID
 export const getProductById = async (id: string): Promise<Product | null> => {

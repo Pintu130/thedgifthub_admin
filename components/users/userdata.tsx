@@ -10,7 +10,7 @@ import Loader from "@/components/loading-screen"
 import { Pencil, Plus, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Modal from "@/components/common/Modal"
-import TableModalUserList from "@/app/users/TableModalUserList"
+import TableModalUserList from "@/app/customers/TableModalUserList"
 import type { ColDef } from "ag-grid-community"
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
@@ -137,7 +137,7 @@ const UsersData = () => {
       await deleteDoc(doc(db, "users", userToDelete.id))
       toast({
         title: "Success",
-        description: "User deleted successfully",
+        description: "Customer deleted successfully",
       })
       fetchUsers()
       closeDeleteModal()
@@ -146,7 +146,7 @@ const UsersData = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to delete user. Please try again.",
+        description: "Failed to delete customer. Please try again.",
       })
     } finally {
       setIsDeleting(false)
@@ -206,22 +206,22 @@ const UsersData = () => {
   return (
     <div className="space-y-4 text-[#333]">
       <div className="px-2 mb-4">
-        <h1 className="text-3xl font-bold tracking-tight text-customButton-text">Users</h1>
-        <p className="text-sm text-[#7A6C53] mt-1">View, manage, and organize all users</p>
+        <h1 className="text-3xl font-bold tracking-tight text-customButton-text">Customers</h1>
+        <p className="text-sm text-[#7A6C53] mt-1">View, manage, and organize all customers</p>
       </div>
 
       <Card className="shadow-md border border-gray-200">
         <div className="flex flex-col md:flex-row md:justify-between md:items-center px-6 pt-4 gap-4">
           <CardHeader className="p-0">
-            <CardTitle className="text-lg text-gray-800">All Users</CardTitle>
-            <p className="text-sm text-gray-600 mt-1">{users.length} total users</p>
+            <CardTitle className="text-lg text-gray-800">All Customers</CardTitle>
+            <p className="text-sm text-gray-600 mt-1">{users.length} total customers</p>
           </CardHeader>
 
           {/* Search + Add User */}
           <div className="flex gap-2 items-center">
             <input
               type="text"
-              placeholder="Search users..."
+              placeholder="Search customers..."
               className="border outline-none p-2 rounded-md shadow-sm w-52 lg:w-64"
               onChange={(e) => gridApi?.setQuickFilter(e.target.value)}
             />
@@ -273,7 +273,7 @@ const UsersData = () => {
       <TableModalUserList
         isModalVisible={isModalVisible}
         onClose={toggleModal}
-        title={formData.id ? "Edit User" : "Add User"}
+        title={formData.id ? "Edit Customer" : "Add Customer"}
         closeLabel="Cancel"
         saveLabel={formData.id ? "Update" : "Save"}
         formData={formData}
@@ -286,8 +286,8 @@ const UsersData = () => {
         isOpen={isDeleteModalOpen}
         onClose={closeDeleteModal}
         onConfirm={confirmDelete}
-        title="Delete User"
-        message="Are you sure you want to delete this user?"
+        title="Delete Customer"
+        message="Are you sure you want to delete this customer?"
         closeLabel="Cancel"
         confirmLabel="Delete"
         isLoading={isDeleting}
