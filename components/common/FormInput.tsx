@@ -12,7 +12,7 @@ interface FormInputProps {
   placeholder?: string
   required?: boolean
   error?: string
-  type?: "text" | "email" | "number" | "tel" | "password"
+  type?: "text" | "email" | "number" | "tel" | "password" | "date"
   min?: string | number
   max?: string | number
   step?: string | number
