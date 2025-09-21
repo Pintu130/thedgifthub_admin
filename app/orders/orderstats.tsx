@@ -1,6 +1,6 @@
 import React from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { ShoppingCart, DollarSign, TrendingUp, Package } from "lucide-react"
+import { ShoppingCart, DollarSign, TrendingUp, Package, IndianRupee } from "lucide-react"
 import { Order } from "@/types/order"
 
 interface OrderStatsProps {
@@ -15,7 +15,11 @@ const OrderStats: React.FC<OrderStatsProps> = ({ orders }) => {
   const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
 
   const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount)
+    new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount)
+
 
   const stats = [
     {
@@ -29,7 +33,7 @@ const OrderStats: React.FC<OrderStatsProps> = ({ orders }) => {
     {
       title: "Total Revenue",
       value: formatCurrency(totalRevenue),
-      icon: DollarSign,
+      icon: IndianRupee,
       change: "+8.2%",
       changeType: "positive" as const,
       bgGradient: "from-green-500 to-green-600",
@@ -65,11 +69,10 @@ const OrderStats: React.FC<OrderStatsProps> = ({ orders }) => {
                 <stat.icon className="h-6 w-6 text-white" />
               </div>
               <div
-                className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${
-                  stat.changeType === "positive"
+                className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${stat.changeType === "positive"
                     ? "bg-green-100 text-green-700"
                     : "bg-red-100 text-red-700"
-                }`}
+                  }`}
               >
                 <TrendingUp
                   className={`h-3 w-3 ${stat.changeType === "negative" ? "rotate-180" : ""}`}

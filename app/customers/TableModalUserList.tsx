@@ -201,7 +201,7 @@
 //   <div className="py-4">
 //     {/* Responsive 2-column layout */}
 //     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      
+
 //       {/* First Name */}
 //       <FormInput
 //         label="First Name"
@@ -528,7 +528,7 @@
 //       <div className="py-4">
 //         {/* Responsive 2-column layout */}
 //         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
+
 //           {/* First Name */}
 //           <FormInput
 //             label="First Name"
@@ -708,6 +708,13 @@ import FormInput from "@/components/common/FormInput"
 import FormSelect from "@/components/common/FormSelect"
 import FormTextarea from "@/components/common/FormTextarea"
 import Loader from "@/components/loading-screen"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface UserFormData {
   id?: string
@@ -947,7 +954,7 @@ export default function TableModalUserList({
       <div className="py-4">
         {/* Responsive 2-column layout */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
+
           {/* First Name */}
           <FormInput
             label="First Name"
@@ -1007,7 +1014,7 @@ export default function TableModalUserList({
           />
 
           {/* Activity Status */}
-          <FormSelect
+          {/* <FormSelect
             label="Status"
             name="activityStatus"
             value={formData.activityStatus || "inactive"}
@@ -1016,8 +1023,27 @@ export default function TableModalUserList({
             placeholder="Select status"
             required
             error={errors.activityStatus}
-          />
-
+          /> */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Status <span className="text-red-500">*</span>
+            </label>
+            <Select
+              value={formData.activityStatus || "inactive"}
+              onValueChange={(value) => setFormData({ ...formData, activityStatus: value })}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.activityStatus && (
+              <p className="mt-1 text-sm text-red-600">{errors.activityStatus}</p>
+            )}
+          </div>
           {/* Address - full width */}
           <div className="md:col-span-2">
             <FormTextarea

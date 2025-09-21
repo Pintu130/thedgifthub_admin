@@ -113,7 +113,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
               {[
                 "Order",
                 "Customer",
-                "Date",
+                // "Date",
                 "Status",
                 "Payment",
                 "Fulfillment",
@@ -123,7 +123,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
               ].map((header, i) => (
                 <th
                   key={i}
-                  className="px-6 py-3 text-left text-sm font-bold text-pink-800 uppercase tracking-wider"
+                  className="px-5 py-3 text-left text-sm font-bold text-pink-800 uppercase tracking-wider"
                 >
                   {i !== 8 ? (
                     <SortButton field={header.toLowerCase().replace(" ", "_") as keyof Order}>
@@ -144,7 +144,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
             "bg-white"
                 } hover:bg-pink-50`}
               >
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {order.order_number}
                   {order.is_gift && (
                     <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-pink-200 text-pink-800">
@@ -152,30 +152,30 @@ const OrderTable: React.FC<OrderTableProps> = ({
                     </span>
                   )}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-5 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">{order.customer_name}</div>
                   <div className="text-sm text-gray-500">{order.customer_email}</div>
                   <div className="text-sm text-gray-500">{order.customer_phone}</div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {/* <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-900">
                   {formatDate(order.order_date)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                </td> */}
+                <td className="px-5 py-4 whitespace-nowrap">
                   <span className={getStatusBadge(order.order_status, "order")}>
                     {order.order_status}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-5 py-4 whitespace-nowrap">
                   <span className={getStatusBadge(order.payment_status, "payment")}>
                     {order.payment_status}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-5 py-4 whitespace-nowrap">
                   <span className={getStatusBadge(order.fulfillment_status, "fulfillment")}>
                     {order.fulfillment_status.replace("_", " ")}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-5 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">
                     {formatCurrency(order.grand_total, order.currency)}
                   </div>
@@ -183,13 +183,13 @@ const OrderTable: React.FC<OrderTableProps> = ({
                     {order.items.length} item{order.items.length > 1 ? "s" : ""}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-900">
                   {order.payment_method}
                   {order.transaction_id && (
                     <div className="text-sm text-gray-500">{order.transaction_id}</div>
                   )}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                <td className="px-5 py-4 whitespace-nowrap text-center text-sm font-medium">
                   <button
                     onClick={() => onViewOrder(order)}
                     className="text-pink-600 hover:text-pink-800 p-1 rounded hover:bg-pink-100 transition-colors"
