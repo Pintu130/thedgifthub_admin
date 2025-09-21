@@ -1294,7 +1294,6 @@ const UsersData = () => {
                 defaultColDef={{
                   resizable: true,
                   sortable: true,
-                  filter: true,
                   cellClass: "text-center text-[#2D3748] bg-white",
                 }}
                 pagination={true}

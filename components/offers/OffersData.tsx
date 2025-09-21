@@ -13,8 +13,13 @@ import Modal from "@/components/common/Modal"
 import type { ColDef } from "ag-grid-community"
 import { Button } from "@/components/ui/button"
 import TableModalOfferData from "@/app/offers/TableModalOfferData"
-// import { useRouter } from "next/navigation"
-// import { OfferFormData } from "@/lib/types/offer"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export interface OfferFormData {
   id?: string
@@ -32,14 +37,20 @@ export interface OfferFormData {
 }
 
 const OffersData = () => {
-  // const router = useRouter()
   const { toast } = useToast()
   const [offers, setOffers] = useState<OfferFormData[]>([])
+  const [allOffers, setAllOffers] = useState<OfferFormData[]>([]) // Store all offers for dropdown
+  const [filteredOffers, setFilteredOffers] = useState<OfferFormData[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isError, setIsError] = useState(false)
   const [searchText, setSearchText] = useState("")
   const [isModalVisible, setIsModalVisible] = useState(false)
+
+  // Filter states
+  const [selectedCategory, setSelectedCategory] = useState<string>("")
+  const [selectedStatus, setSelectedStatus] = useState<string>("")
+
   const [formData, setFormData] = useState<OfferFormData>(() => ({
     categoryId: '',
     discountType: 'percentage',
@@ -63,30 +74,71 @@ const OffersData = () => {
   const gridRef = useRef<AgGridReact | null>(null)
   const [paginationPageSize] = useState(10)
   const [gridApi, setGridApi] = useState<any>(null)
-  const [categories, setCategories] = useState<Array<{id: string, name: string}>>([])
+  const [categories, setCategories] = useState<Array<{ id: string, name: string }>>([])
 
-  // Fetch offers from API
-  const fetchOffers = useCallback(async () => {
+  // Fetch all offers for dropdown (no filters)
+  const fetchAllOffers = useCallback(async () => {
     try {
-      setIsLoading(true)
       const response = await fetch('/api/offers')
       if (!response.ok) {
-        throw new Error('Failed to fetch offers')
+        const errorData = await response.json()
+        throw new Error(errorData.details || "Failed to fetch offers")
       }
       const data = await response.json()
-      setOffers(data)
+      setAllOffers(data)
     } catch (error) {
-      console.error('Error fetching offers:', error)
+      console.error("Error fetching all offers:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load offers for dropdown. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }, [toast])
+
+  // Fetch offers with optional filters
+  const fetchOffers = useCallback(async (categoryFilter?: string, statusFilter?: string) => {
+    try {
+      setIsLoading(true)
+      setIsError(false)
+
+      let url = "/api/offers"
+      const params = new URLSearchParams()
+
+      if (categoryFilter && categoryFilter !== "") {
+        params.append("category", categoryFilter)
+      }
+      if (statusFilter && statusFilter !== "") {
+        params.append("status", statusFilter)
+      }
+
+      if (params.toString()) {
+        url += `?${params.toString()}`
+      }
+
+      console.log('Fetching from URL:', url)
+
+      const response = await fetch(url)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.details || errorData.error || "Failed to fetch offers")
+      }
+
+      const data = await response.json()
+      setOffers(data)
+      setFilteredOffers(data)
+    } catch (error) {
+      console.error("Error fetching offers:", error)
       setIsError(true)
       toast({
-        title: 'Error',
-        description: 'Failed to load offers',
-        variant: 'destructive',
+        title: "Error",
+        description: `Failed to load offers: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
       })
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [toast])
 
   // Fetch categories
   const fetchCategories = useCallback(async () => {
@@ -112,10 +164,38 @@ const OffersData = () => {
     }
   }, [toast])
 
+  // Handle category filter change
+  const handleStatusFilterChange = (status: string) => {
+    setSelectedStatus(status)
+    fetchOffers(selectedCategory, status)
+  }
+
+  // Handle category filter change - accepts string directly
+  const handleCategoryFilterChange = (categoryId: string) => {
+    setSelectedCategory(categoryId)
+    fetchOffers(categoryId, selectedStatus)
+  }
+
+
+  // Filter offers based on search text (client-side filtering)
   useEffect(() => {
-    fetchOffers()
+    if (searchText.trim() === "") {
+      setFilteredOffers(offers)
+    } else {
+      const filtered = offers.filter((offer) =>
+        offer.discountLabel.toLowerCase().includes(searchText.toLowerCase()) ||
+        offer.priceLabel.toLowerCase().includes(searchText.toLowerCase()) ||
+        categories.find(cat => cat.id === offer.categoryId)?.name.toLowerCase().includes(searchText.toLowerCase())
+      )
+      setFilteredOffers(filtered)
+    }
+  }, [searchText, offers, categories])
+
+  useEffect(() => {
+    fetchAllOffers() // Fetch all offers for dropdown
+    fetchOffers() // Fetch offers for table
     fetchCategories()
-  }, [fetchOffers, fetchCategories])
+  }, [fetchAllOffers, fetchOffers, fetchCategories])
 
   // Search
   const onSearchTextChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -166,7 +246,7 @@ const OffersData = () => {
     setIsModalVisible(true)
   }, [])
 
-  // ✅ Delete
+  // Delete
   const handleDelete = useCallback((offer: OfferFormData) => {
     setOfferToDelete(offer)
     setIsDeleteModalOpen(true)
@@ -192,7 +272,7 @@ const OffersData = () => {
       console.error('No offer ID provided for deletion')
       return
     }
-    
+
     setIsDeleting(true)
     try {
       console.log('Deleting offer with ID:', offerToDelete.id)
@@ -202,15 +282,16 @@ const OffersData = () => {
           'Content-Type': 'application/json',
         },
       })
-      
+
       const responseData = await response.json()
       console.log('Delete response:', responseData)
-      
+
       if (!response.ok) {
         throw new Error(responseData.error || 'Failed to delete offer')
       }
-      
-      await fetchOffers()
+
+      await fetchAllOffers()
+      await fetchOffers(selectedCategory, selectedStatus)
       toast({
         title: "Success",
         description: "Offer deleted successfully",
@@ -225,13 +306,17 @@ const OffersData = () => {
       })
     } finally {
       setIsDeleting(false)
-    }  
+    }
     closeDeleteModal()
   }
 
-  // Submission is handled inside TableModalOfferData.onSubmit
+  // Handle modal success (refresh data)
+  const handleModalSuccess = async () => {
+    await fetchAllOffers()
+    await fetchOffers(selectedCategory, selectedStatus)
+  }
 
-  // ✅ Column Definitions
+  // Column Definitions
   const columnDefs: ColDef[] = [
     {
       headerName: "Image",
@@ -280,11 +365,10 @@ const OffersData = () => {
       width: 120,
       cellRenderer: (params: any) => (
         <span
-          className={`px-2 py-1 text-xs font-medium rounded-full ${
-            params.value === "active"
-              ? "bg-green-100 text-green-800"
-              : "bg-gray-100 text-gray-800"
-          }`}
+          className={`px-2 py-1 text-xs font-medium rounded-full ${params.value === "active"
+            ? "bg-green-100 text-green-800"
+            : "bg-gray-100 text-gray-800"
+            }`}
         >
           {params.value}
         </span>
@@ -296,14 +380,6 @@ const OffersData = () => {
       width: 150,
       cellRenderer: (params: any) => (
         <div className="flex items-center justify-center gap-2 h-full w-full">
-          {/* View button (optional) */}
-          {/* <button
-            onClick={() => handleView(params.data)}
-            className="p-1 rounded-full bg-green-50 text-green-600 hover:bg-green-100 transition"
-            title="View"
-          >
-            <Eye className="h-4 w-4" />
-          </button> */}
           <button
             onClick={() => handleEdit(params.data)}
             className="p-1 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition"
@@ -334,17 +410,69 @@ const OffersData = () => {
         <div className="flex flex-col md:flex-row md:justify-between md:items-center px-6 pt-4 gap-4">
           <CardHeader className="p-0">
             <CardTitle className="text-lg text-gray-800">All Offers</CardTitle>
-            <p className="text-sm text-gray-600 mt-1">{offers.length} total offers</p>
+            <p className="text-sm text-gray-600 mt-1">
+              {filteredOffers.length} of {allOffers.length} offers
+              {(selectedCategory || selectedStatus) && " (filtered)"}
+            </p>
           </CardHeader>
 
-          {/* Search + Add Offer */}
-          <div className="flex gap-2 items-center">
+          {/* Search + Filters + Add Offer */}
+          <div className="flex flex-wrap gap-2 items-center">
+            {/* Category Filter */}
+            <div className="flex flex-wrap gap-2 items-center">
+              {/* Category Filter */}
+              <Select
+                value={selectedCategory || "all"}
+                onValueChange={(value) =>
+                  handleCategoryFilterChange(value === "all" ? "" : value)
+                }
+                disabled={isLoading}
+              >
+                <SelectTrigger className="w-52 border rounded-md shadow-sm px-2 py-2 cursor-pointer">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem
+                      key={cat.id}
+                      value={cat.id || ""} // fallback to empty string for safety
+                    >
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Status Filter */}
+              <Select
+                value={selectedStatus || "all"}
+                onValueChange={(value) =>
+                  handleStatusFilterChange(value === "all" ? "" : value)
+                }
+                disabled={isLoading}
+              >
+                <SelectTrigger className="w-44 border rounded-md shadow-sm px-2 py-2 cursor-pointer">
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+
             <input
               type="text"
               placeholder="Search offers..."
               className="border outline-none p-2 rounded-md shadow-sm w-52 lg:w-64"
               value={searchText}
               onChange={onSearchTextChange}
+              disabled={isLoading}
             />
             <button
               onClick={() => toggleModal(true)}
@@ -355,12 +483,14 @@ const OffersData = () => {
                                        hover:bg-customButton-hoverBg
                                        hover:text-customButton-hoverText font-semibold transition flex items-center gap-2"
               aria-label="Add new offer"
+              disabled={isLoading}
             >
               <Plus size={16} />
               <span>Add Offer</span>
             </button>
           </div>
         </div>
+
 
         <CardContent className="pt-4">
           {isLoading && (
@@ -371,13 +501,6 @@ const OffersData = () => {
           {isError && (
             <div className="text-center py-4">
               <p className="text-red-600">Failed to load offers. Please try again.</p>
-              <Button
-                variant="outline"
-                className="mt-3"
-                onClick={fetchOffers}
-              >
-                Retry
-              </Button>
             </div>
           )}
           {!isLoading && !isError && (
@@ -530,18 +653,18 @@ const OffersData = () => {
             {viewOffer.availableOffers && (
               <div>
                 <h3 className="font-medium text-gray-700">Available Offers:</h3>
-                <div 
-                  className="prose max-w-none" 
-                  dangerouslySetInnerHTML={{ __html: viewOffer.availableOffers }} 
+                <div
+                  className="prose max-w-none"
+                  dangerouslySetInnerHTML={{ __html: viewOffer.availableOffers }}
                 />
               </div>
             )}
             {viewOffer.highlights && (
               <div>
                 <h3 className="font-medium text-gray-700">Highlights:</h3>
-                <div 
-                  className="prose max-w-none" 
-                  dangerouslySetInnerHTML={{ __html: viewOffer.highlights }} 
+                <div
+                  className="prose max-w-none"
+                  dangerouslySetInnerHTML={{ __html: viewOffer.highlights }}
                 />
               </div>
             )}

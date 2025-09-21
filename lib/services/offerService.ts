@@ -9,6 +9,7 @@ import {
   orderBy,
   serverTimestamp,
   getDoc,
+  where,
 } from "firebase/firestore"
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage"
 import { db, storage } from "../firebase"
@@ -28,8 +29,8 @@ export interface Offer {
   updatedAt?: any
 }
 
-// Get all offers
-const getOffers = async (): Promise<Offer[]> => {
+// Get all offers (no filtering)
+const getAllOffers = async (): Promise<Offer[]> => {
   try {
     const offersRef = collection(db, "offers")
     const q = query(offersRef, orderBy("createdAt", "desc"))
@@ -39,6 +40,104 @@ const getOffers = async (): Promise<Offer[]> => {
       id: doc.id,
       ...doc.data(),
     })) as Offer[]
+  } catch (error) {
+    console.error("Error getting all offers:", error)
+    throw error
+  }
+}
+
+// Get offers filtered by status only
+const getOffersByStatus = async (status: string): Promise<Offer[]> => {
+  try {
+    const offersRef = collection(db, "offers")
+    const q = query(offersRef, where('status', '==', status))
+    const querySnapshot = await getDocs(q)
+    
+    const offers = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Offer[]
+
+    // Sort manually in JavaScript since we can't use orderBy with where without compound index
+    return offers.sort((a, b) => {
+      const aDate = a.createdAt ? new Date(a.createdAt.toDate()).getTime() : 0
+      const bDate = b.createdAt ? new Date(b.createdAt.toDate()).getTime() : 0
+      return bDate - aDate // Descending order (newest first)
+    })
+  } catch (error) {
+    console.error("Error getting offers by status:", error)
+    throw error
+  }
+}
+
+// Get offers filtered by category only
+const getOffersByCategory = async (categoryId: string): Promise<Offer[]> => {
+  try {
+    const offersRef = collection(db, "offers")
+    const q = query(offersRef, where('categoryId', '==', categoryId))
+    const querySnapshot = await getDocs(q)
+    
+    const offers = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Offer[]
+
+    // Sort manually in JavaScript since we can't use orderBy with where without compound index
+    return offers.sort((a, b) => {
+      const aDate = a.createdAt ? new Date(a.createdAt.toDate()).getTime() : 0
+      const bDate = b.createdAt ? new Date(b.createdAt.toDate()).getTime() : 0
+      return bDate - aDate // Descending order (newest first)
+    })
+  } catch (error) {
+    console.error("Error getting offers by category:", error)
+    throw error
+  }
+}
+
+// Get offers filtered by both category and status
+const getOffersByCategoryAndStatus = async (categoryId: string, status: string): Promise<Offer[]> => {
+  try {
+    const offersRef = collection(db, "offers")
+    const q = query(
+      offersRef, 
+      where('categoryId', '==', categoryId),
+      where('status', '==', status)
+    )
+    const querySnapshot = await getDocs(q)
+    
+    const offers = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Offer[]
+
+    // Sort manually in JavaScript
+    return offers.sort((a, b) => {
+      const aDate = a.createdAt ? new Date(a.createdAt.toDate()).getTime() : 0
+      const bDate = b.createdAt ? new Date(b.createdAt.toDate()).getTime() : 0
+      return bDate - aDate // Descending order (newest first)
+    })
+  } catch (error) {
+    console.error("Error getting offers by category and status:", error)
+    throw error
+  }
+}
+
+// Main function that handles all filtering scenarios
+const getOffers = async (categoryFilter?: string, statusFilter?: string): Promise<Offer[]> => {
+  try {
+    if (categoryFilter && statusFilter) {
+      // Both filters
+      return await getOffersByCategoryAndStatus(categoryFilter, statusFilter)
+    } else if (categoryFilter) {
+      // Category filter only
+      return await getOffersByCategory(categoryFilter)
+    } else if (statusFilter) {
+      // Status filter only
+      return await getOffersByStatus(statusFilter)
+    } else {
+      // No filters
+      return await getAllOffers()
+    }
   } catch (error) {
     console.error("Error getting offers:", error)
     throw error
@@ -184,6 +283,10 @@ const deleteOffer = async (offerId: string, imageUrls: string[] = []): Promise<v
 
 export {
   getOffers,
+  getAllOffers,
+  getOffersByStatus,
+  getOffersByCategory,
+  getOffersByCategoryAndStatus,
   getOffer,
   createOffer,
   updateOffer,

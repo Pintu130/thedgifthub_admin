@@ -13,6 +13,13 @@ import Modal from "@/components/common/Modal"
 import TableModalProductData from "@/app/products/TableModalProductData"
 import type { ColDef } from "ag-grid-community"
 import type { Product } from "@/lib/types/product"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 // types/product.ts
 export interface ProductFormData {
@@ -31,8 +38,6 @@ export interface ProductFormData {
   productPrice: number
   discountPercentage: number
 }
-
-
 
 const ProductData = () => {
   const { toast } = useToast()
@@ -60,7 +65,6 @@ const ProductData = () => {
 
   const [categories, setCategories] = useState<Array<{ id: string, name: string }>>([])
 
-
   // Delete confirmation modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [productToDelete, setProductToDelete] = useState<Product | null>(null)
@@ -68,19 +72,20 @@ const ProductData = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
   const [viewProduct, setViewProduct] = useState<Product | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string>("")
+  const [selectedStatus, setSelectedStatus] = useState<string>("") // New state for status filter
 
   const gridRef = useRef<AgGridReact | null>(null)
   const [paginationPageSize] = useState(5)
   const [gridApi, setGridApi] = useState<any>(null)
 
-  // ✅ Fetch products
-  // Fetch products (modified)
+  // ✅ Fetch products with category and status filters
   const fetchProducts = useCallback(async () => {
     setIsLoading(true)
     setIsError(false)
     try {
       const queryParams = new URLSearchParams()
       if (selectedCategory) queryParams.append("categoryId", selectedCategory)
+      if (selectedStatus) queryParams.append("status", selectedStatus) // Add status filter
 
       const response = await fetch(`/api/products?${queryParams.toString()}`)
       if (!response.ok) throw new Error("Failed to fetch products")
@@ -98,7 +103,7 @@ const ProductData = () => {
     } finally {
       setIsLoading(false)
     }
-  }, [toast, selectedCategory])
+  }, [toast, selectedCategory, selectedStatus]) // Add selectedStatus dependency
 
   useEffect(() => {
     fetchProducts()
@@ -266,7 +271,6 @@ const ProductData = () => {
       field: "productName",
       flex: 1.5,
       sortable: true,
-      filter: true,
       minWidth: 200,
       maxWidth: 300,
       cellRenderer: (params: any) => (
@@ -280,7 +284,6 @@ const ProductData = () => {
       field: "status",
       flex: 1,
       sortable: true,
-      filter: true,
       minWidth: 140,
       maxWidth: 180,
       cellRenderer: (params: any) => (
@@ -299,7 +302,6 @@ const ProductData = () => {
       field: "originalPrice",
       flex: 1.5,
       sortable: true,
-      filter: true,
       minWidth: 160,
       maxWidth: 200,
       cellRenderer: (params: any) => (
@@ -315,7 +317,6 @@ const ProductData = () => {
       field: "productPrice",
       flex: 1.5,
       sortable: true,
-      filter: true,
       minWidth: 160,
       maxWidth: 200,
       cellRenderer: (params: any) => (
@@ -379,7 +380,6 @@ const ProductData = () => {
     },
   ]
 
-
   return (
     <div className="space-y-4 text-[#333]">
       <div className="px-2 mb-4">
@@ -391,30 +391,54 @@ const ProductData = () => {
         <div className="flex flex-wrap flex-col md:flex-row md:justify-between md:items-center px-6 pt-4 gap-4">
           <CardHeader className="p-0">
             <CardTitle className="text-lg text-gray-800">All Products</CardTitle>
-            <p className="text-sm text-gray-600 mt-1">{products.length} total products</p>
+            <p className="text-sm text-gray-600 mt-1">
+              {products.length} products
+              {(selectedCategory || selectedStatus) && " (filtered)"}
+            </p>
           </CardHeader>
 
           {/* Search + Add Product */}
           <div className="flex flex-wrap gap-2 items-center">
             {/* Category Filter */}
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="border outline-none p-2 rounded-md shadow-sm w-52 cursor-pointer"
+            <Select
+              value={selectedCategory || "all"}
+              onValueChange={(value) => setSelectedCategory(value === "all" ? "" : value)}
             >
-              <option value="">All Categories</option>
-              {categories.map((cat) => (
-                <option className="cursor-pointer" key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="w-52">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Status Filter - NEW */}
+            <Select
+              value={selectedStatus || "all"}
+              onValueChange={(value) => setSelectedStatus(value === "all" ? "" : value)}
+            >
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+
             <input
               type="text"
               placeholder="Search products..."
               className="border outline-none p-2 rounded-md shadow-sm w-52 lg:w-64"
               value={searchText}
               onChange={onSearchTextChange}
+              disabled={isLoading}
             />
             <button
               onClick={toggleModal}
@@ -425,6 +449,7 @@ const ProductData = () => {
                                        hover:bg-customButton-hoverBg
                                        hover:text-customButton-hoverText font-semibold transition flex items-center gap-2"
               aria-label="Add new product"
+              disabled={isLoading}
             >
               <Plus size={16} />
               <span>Add Product</span>
@@ -433,7 +458,11 @@ const ProductData = () => {
         </div>
 
         <CardContent className="pt-4">
-          {isLoading && <Loader />}
+          {isLoading && (
+            <div className="flex justify-center items-center py-8">
+              <Loader />
+            </div>
+          )}
           {isError && <p className="p-4 bg-red-50 text-red-700 rounded-md">Failed to load products.</p>}
           {!isLoading && !isError && (
             <div className="ag-theme-alpine w-full">
@@ -548,7 +577,6 @@ const ProductData = () => {
                 <span className="font-semibold text-[#A30000]">Category Name:</span>{" "}
                 {categories.find((cat) => cat.id === viewProduct.categoryId)?.name || "N/A"}
               </p>
-
             </div>
 
             {viewProduct.description && (

@@ -7,11 +7,13 @@ import { useToast } from "@/hooks/use-toast"
 import { Trash2 } from "lucide-react"
 import FormInput from "@/components/common/FormInput"
 import Loader from "@/components/loading-screen"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface Category {
     id?: string
     name: string
     imageUrl: string
+    status: "active" | "inactive" // Updated with status
     createdAt?: string
     updatedAt?: string
 }
@@ -20,11 +22,13 @@ interface CategoryFormData {
     name: string
     image: File | null
     imagePreview: string
+    status: "active" | "inactive" // Updated with status
 }
 
 interface FormErrors {
     name?: string
     image?: string
+    status?: string
 }
 
 interface Props {
@@ -64,7 +68,7 @@ export default function CategoryModal({
         }
     }, [isModalVisible])
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target
         setFormData((prev) => ({ ...prev, [name]: value }))
 
@@ -123,6 +127,10 @@ export default function CategoryModal({
             newErrors.image = "Category image is required"
         }
 
+        if (!formData.status) {
+            newErrors.status = "Status is required"
+        }
+
         setErrors(newErrors)
         return Object.keys(newErrors).length === 0
     }
@@ -137,6 +145,7 @@ export default function CategoryModal({
 
         const formDataToSend = new FormData()
         formDataToSend.append("name", formData.name)
+        formDataToSend.append("status", formData.status) // Add status to form data
 
         if (formData.image) {
             formDataToSend.append("image", formData.image)
@@ -258,6 +267,7 @@ export default function CategoryModal({
                     )}
                     {errors.image && <p className="mt-1 text-sm text-red-600">{errors.image}</p>}
                 </div>
+
                 <div>
                     <FormInput
                         label="Category Name"
@@ -268,8 +278,36 @@ export default function CategoryModal({
                         required
                         error={errors.name}
                     />
-
                 </div>
+
+                {/* New Status Field */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Status <span className="text-red-500">*</span>
+                    </label>
+
+                    <Select
+                        value={formData.status}
+                        onValueChange={(value: "active" | "inactive") =>
+                            setFormData((prev) => ({ ...prev, status: value }))
+                        }
+                        disabled={isSubmitting}
+                    >
+                        <SelectTrigger className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+
+                        <SelectContent>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    {errors.status && (
+                        <p className="mt-1 text-sm text-red-600">{errors.status}</p>
+                    )}
+                </div>
+
             </div>
         </Modal>
     )

@@ -13,11 +13,19 @@ import { useToast } from "@/hooks/use-toast"
 import Loader from "@/components/loading-screen"
 import Modal from "@/components/common/Modal"
 import CategoryModal from "@/app/categories/CategoryModal"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface Category {
-  id?: string
+  id: string   // remove the `?`
   name: string
   imageUrl: string
+  status: "active" | "inactive"
   createdAt?: string
   updatedAt?: string
 }
@@ -26,11 +34,13 @@ interface CategoryFormData {
   name: string
   image: File | null
   imagePreview: string
+  status: "active" | "inactive"
 }
 
 const CategoriesData = () => {
   const { toast } = useToast()
   const [categories, setCategories] = useState<Category[]>([])
+  const [allCategories, setAllCategories] = useState<Category[]>([])
   const [filteredCategories, setFilteredCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isError, setIsError] = useState(false)
@@ -40,14 +50,17 @@ const CategoriesData = () => {
   const [searchText, setSearchText] = useState("")
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [categoryToDelete, setCategoryToDelete] = useState<{ id: string; imageUrl: string } | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<string>("")
+  const [selectedStatus, setSelectedStatus] = useState<string>("")
 
   const [formData, setFormData] = useState<CategoryFormData>({
     name: "",
     image: null,
     imagePreview: "",
+    status: "active",
   })
 
-  // Format date to dd/MM/yyyy hh:mm a
+  // Format date to dd/MM/yyyy
   const formatDate = (dateString?: string | Date) => {
     if (!dateString) return "-"
     try {
@@ -65,12 +78,54 @@ const CategoriesData = () => {
     }
   }
 
-  // Fetch categories
-  const fetchCategories = useCallback(async () => {
+  // Fetch all categories for dropdown (no filters)
+  const fetchAllCategories = useCallback(async () => {
+    try {
+      const response = await fetch("/api/categories")
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.details || "Failed to fetch categories")
+      }
+      const data = await response.json()
+      setAllCategories(data)
+    } catch (error) {
+      console.error("Error fetching all categories:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load categories for dropdown. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }, [toast])
+
+  // Fetch categories with optional filters - Method 1: Using query parameters
+  const fetchCategoriesWithQueryParams = useCallback(async (categoryFilter?: string, statusFilter?: string) => {
     try {
       setIsLoading(true)
-      const response = await fetch("/api/categories")
-      if (!response.ok) throw new Error("Failed to fetch categories")
+      setIsError(false)
+
+      let url = "/api/categories"
+      const params = new URLSearchParams()
+
+      if (categoryFilter && categoryFilter !== "") {
+        params.append("category", categoryFilter)
+      }
+      if (statusFilter && statusFilter !== "") {
+        params.append("status", statusFilter)
+      }
+
+      if (params.toString()) {
+        url += `?${params.toString()}`
+      }
+
+      console.log('Fetching from URL:', url)
+
+      const response = await fetch(url)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.details || "Failed to fetch categories")
+      }
+
       const data = await response.json()
       setCategories(data)
       setFilteredCategories(data)
@@ -79,7 +134,7 @@ const CategoriesData = () => {
       setIsError(true)
       toast({
         title: "Error",
-        description: "Failed to load categories. Please try again.",
+        description: `Failed to load categories: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       })
     } finally {
@@ -87,20 +142,83 @@ const CategoriesData = () => {
     }
   }, [toast])
 
-  // Filter categories based on search text
+  // Alternative method: Using dedicated status endpoint - Method 2
+  const fetchCategoriesWithStatusEndpoint = useCallback(async (statusFilter: string) => {
+    try {
+      setIsLoading(true)
+      setIsError(false)
+
+      const url = `/api/categories/status/${statusFilter}`
+      console.log('Fetching from status endpoint:', url)
+
+      const response = await fetch(url)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.details || "Failed to fetch categories by status")
+      }
+
+      const data = await response.json()
+      setCategories(data)
+      setFilteredCategories(data)
+    } catch (error) {
+      console.error("Error fetching categories by status:", error)
+      setIsError(true)
+      toast({
+        title: "Error",
+        description: `Failed to load categories by status: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }, [toast])
+
+  // Main fetch function - you can choose which method to use
+  const fetchCategories = useCallback(async (categoryFilter?: string, statusFilter?: string) => {
+    // Method 1: Using query parameters (recommended)
+    await fetchCategoriesWithQueryParams(categoryFilter, statusFilter)
+
+    // Alternative - Method 2: Using dedicated endpoint for status only
+    // Uncomment the lines below and comment out the line above if you prefer this approach
+    /*
+    if (statusFilter && statusFilter !== "" && !categoryFilter) {
+      await fetchCategoriesWithStatusEndpoint(statusFilter)
+    } else {
+      await fetchCategoriesWithQueryParams(categoryFilter, statusFilter)
+    }
+    */
+  }, [fetchCategoriesWithQueryParams])
+
+  // Category filter
+  const handleCategoryFilterChange = (value: string) => {
+    setSelectedCategory(value === "all" ? "" : value)
+    fetchCategories(value === "all" ? "" : value, selectedStatus)
+  }
+
+  // Status filter
+  const handleStatusFilterChange = (value: string) => {
+    setSelectedStatus(value === "all" ? "" : value)
+    fetchCategories(selectedCategory, value === "all" ? "" : value)
+  }
+
+
+  // Filter categories based on search text (client-side filtering)
   useEffect(() => {
     if (searchText.trim() === "") {
       setFilteredCategories(categories)
     } else {
-      const filtered = categories.filter((category) => category.name.toLowerCase().includes(searchText.toLowerCase()))
+      const filtered = categories.filter((category) =>
+        category.name.toLowerCase().includes(searchText.toLowerCase())
+      )
       setFilteredCategories(filtered)
     }
   }, [searchText, categories])
 
   // Initialize component - fetch categories on mount
   useEffect(() => {
+    fetchAllCategories()
     fetchCategories()
-  }, [fetchCategories])
+  }, [fetchAllCategories, fetchCategories])
 
   // Reset form
   const resetForm = () => {
@@ -108,6 +226,7 @@ const CategoriesData = () => {
       name: "",
       image: null,
       imagePreview: "",
+      status: "active",
     })
     setEditingId(null)
   }
@@ -124,6 +243,7 @@ const CategoriesData = () => {
       name: category.name,
       image: null,
       imagePreview: category.imageUrl || "",
+      status: category.status || "active",
     })
     setEditingId(category.id || null)
     setIsModalOpen(true)
@@ -153,7 +273,9 @@ const CategoriesData = () => {
         throw new Error(errorData.error || "Failed to delete category")
       }
 
-      await fetchCategories()
+      await fetchAllCategories()
+      await fetchCategories(selectedCategory, selectedStatus)
+
       toast({
         title: "Success",
         description: "Category deleted successfully",
@@ -177,6 +299,12 @@ const CategoriesData = () => {
     resetForm()
   }
 
+  // Handle modal success (refresh data)
+  const handleModalSuccess = async () => {
+    await fetchAllCategories()
+    await fetchCategories(selectedCategory, selectedStatus)
+  }
+
   // Column definitions for AG Grid
   const centerStyle = {
     display: "flex",
@@ -197,7 +325,7 @@ const CategoriesData = () => {
         params.value ? (
           <Image
             src={params.value || "/placeholder.svg"}
-            alt={params.data?.name || "Product"}
+            alt={params.data?.name || "Category"}
             width={40}
             height={40}
             className="rounded-md object-cover"
@@ -218,6 +346,26 @@ const CategoriesData = () => {
       filter: false,
     },
     {
+      headerName: "Status",
+      field: "status",
+      flex: 1,
+      minWidth: 120,
+      maxWidth: 180,
+      cellStyle: centerStyle,
+      cellRenderer: (params: any) => (
+        <span
+          className={`px-2 py-1 text-xs rounded-full ${params.value === "active"
+            ? "bg-green-100 text-green-800"
+            : "bg-red-100 text-red-800"
+            }`}
+        >
+          {params.value === "active" ? "Active" : "Inactive"}
+        </span>
+      ),
+      filter: false,
+      sortable: true,
+    },
+    {
       headerName: "Last Updated",
       field: "updatedAt",
       flex: 1,
@@ -234,22 +382,18 @@ const CategoriesData = () => {
       cellStyle: centerStyle,
       cellRenderer: (params: any) => (
         <div className="flex items-center space-x-2">
-
           <button
             onClick={() => handleEdit(params.data)}
             className="p-1 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition"
           >
             <Pencil size={16} />
           </button>
-
-
           <button
             onClick={() => handleDeleteClick(params.data.id, params.data.imageUrl)}
             className="p-1 rounded-full bg-red-50 text-red-600 hover:bg-red-100 transition"
           >
             <Trash2 size={16} />
           </button>
-
         </div>
       ),
       sortable: false,
@@ -267,14 +411,17 @@ const CategoriesData = () => {
     params.api.sizeColumnsToFit()
   }
 
-  if (isLoading) {
+  if (isLoading && categories.length === 0) {
     return <Loader />
   }
 
   if (isError) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-red-500">Failed to load categories. Please try again.</p>
+      <div className="flex flex-col items-center justify-center h-64">
+        <p className="text-red-500 mb-4">Failed to load categories. Please try again.</p>
+        <Button onClick={() => fetchCategories(selectedCategory, selectedStatus)}>
+          Retry
+        </Button>
       </div>
     )
   }
@@ -285,38 +432,87 @@ const CategoriesData = () => {
         <h1 className="text-3xl font-bold tracking-tight text-customButton-text">Categories</h1>
         <p className="text-sm text-[#7A6C53] mt-1">View, manage, and organize all categories</p>
       </div>
+
       <Card className="mb-6">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader className="flex flex-wrap flex-row items-center justify-between space-y-3 pb-4">
           <CardHeader className="p-0">
             <CardTitle className="text-lg text-gray-800">All Categories</CardTitle>
-            <p className="text-sm text-gray-600 mt-1">{categories.length} total categories</p>
+            <p className="text-sm text-gray-600 mt-1">
+              {filteredCategories.length} of {allCategories.length} categories
+              {(selectedCategory || selectedStatus) && " (filtered)"}
+            </p>
           </CardHeader>
-          {/* Search + Add Category */}
-          <div className="flex gap-2 items-center">
+
+          <div className="flex flex-wrap gap-2 items-center">
+            {/* Category Filter */}
+            <Select
+              value={selectedCategory || "all"}
+              onValueChange={handleCategoryFilterChange}
+              disabled={isLoading}
+            >
+              <SelectTrigger className="w-52 border rounded-md shadow-sm px-2 py-2 cursor-pointer">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {allCategories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Status Filter */}
+            <Select
+              value={selectedStatus || "all"}
+              onValueChange={handleStatusFilterChange}
+              disabled={isLoading}
+            >
+              <SelectTrigger className="w-44 border rounded-md shadow-sm px-2 py-2 cursor-pointer">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+
             <input
               type="text"
               placeholder="Search categories..."
               className="border outline-none p-2 rounded-md shadow-sm w-52 lg:w-64"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
+              disabled={isLoading}
             />
+
             <button
               onClick={handleAddNew}
               className="px-4 py-2 rounded-md bg-gradient-to-r 
-                                                 from-customButton-gradientFrom
-                                                 to-customButton-gradientTo
-                                                 text-customButton-text
-                                                 hover:bg-customButton-hoverBg
-                                                 hover:text-customButton-hoverText font-semibold transition flex items-center gap-2"
+                         from-customButton-gradientFrom
+                         to-customButton-gradientTo
+                         text-customButton-text
+                         hover:bg-customButton-hoverBg
+                         hover:text-customButton-hoverText font-semibold transition flex items-center gap-2"
               aria-label="Add new category"
+              disabled={isLoading}
             >
               <Plus size={16} />
               <span>Add Category</span>
             </button>
           </div>
         </CardHeader>
+
         <CardContent>
-          {isLoading && <Loader />}
+          {isLoading && (
+            <div>
+              <Loader />
+            </div>
+          )}
 
           <div className="ag-theme-alpine" style={{ height: "300px", width: "100%" }}>
             <AgGridReact
@@ -341,9 +537,10 @@ const CategoriesData = () => {
         saveLabel={editingId ? "Update" : "Create"}
         formData={formData}
         setFormData={setFormData}
-        onRefresh={fetchCategories}
+        onRefresh={handleModalSuccess}
         editingId={editingId}
       />
+
 
       <Modal
         isOpen={deleteModalOpen}

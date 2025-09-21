@@ -9,6 +9,13 @@ import { useToast } from "@/hooks/use-toast"
 import { X, Plus } from "lucide-react"
 import AdvancedCKEditor from "@/components/common/advanced-ckeditor"
 import { Switch } from "@/components/ui/switch"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export interface ProductFormData {
   id?: string
@@ -405,21 +412,35 @@ export default function TableModalProductData({
           <label className="block text-sm font-medium text-gray-700">
             Category <span className="text-red-500">*</span>
           </label>
-          <select
-            name="categoryId"
-            value={formData.categoryId || ""}
-            onChange={handleChange}
-            className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.categoryId ? "border-red-500" : "border-gray-300"
-              }`}
+
+          <Select
+            value={formData.categoryId || "none"}
+            onValueChange={(value) =>
+              setFormData((prev) => ({
+                ...prev,
+                categoryId: value === "none" ? "" : value,
+              }))
+            }
             disabled={isSubmitting}
           >
-            <option value="">Select a category</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger
+              className={`w-full border rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.categoryId ? "border-red-500" : "border-gray-300"
+                }`}
+            >
+              <SelectValue placeholder="Select a category" />
+            </SelectTrigger>
+
+            <SelectContent>
+              <SelectItem value="none">Select a category</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+
           {errors.categoryId && (
             <p className="text-red-500 text-sm mt-1">{errors.categoryId}</p>
           )}
@@ -567,19 +588,30 @@ export default function TableModalProductData({
             <label className="block text-sm font-medium text-gray-700">
               Status <span className="text-red-500">*</span>
             </label>
-            <div className="flex items-center space-x-3 p-3 border border-gray-300 rounded-md bg-gray-50">
-              <Switch
-                checked={formData.status === "active"}
-                onCheckedChange={handleStatusChange}
-                disabled={isSubmitting}
-              />
-              <span
-                className={`text-sm font-medium ${formData.status === "active" ? "text-green-600" : "text-red-600"
+
+            <Select
+              value={formData.status || "active"}
+              onValueChange={(value: "active" | "inactive") =>
+                setFormData((prev: ProductFormData) => ({
+                  ...prev,
+                  status: value,
+                }))
+              }
+              disabled={isSubmitting}
+            >
+              <SelectTrigger
+                className={`w-full border rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.status ? "border-red-500" : "border-gray-300"
                   }`}
               >
-                {formData.status === "active" ? "Active" : "Inactive"}
-              </span>
-            </div>
+                <SelectValue placeholder="Select Status" />
+              </SelectTrigger>
+
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+
             {errors.status && (
               <p className="text-red-500 text-sm">{errors.status}</p>
             )}

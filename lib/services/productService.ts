@@ -109,11 +109,9 @@ export const createProduct = async (productData: ProductFormData): Promise<strin
   }
 }
 
-// Get all products with pagination and search
-// ✅ Get all products with pagination, search, sort, category filter
-// Get all products with pagination, search and category filter
+// ✅ Updated getProducts function with status filter
 export const getProducts = async (
-  params: PaginationParams & { categoryId?: string } = { page: 1, limit: 10 }
+  params: PaginationParams & { categoryId?: string; status?: string } = { page: 1, limit: 10 }
 ) => {
   try {
     const {
@@ -123,6 +121,7 @@ export const getProducts = async (
       sortBy = "createdAt",
       sortOrder = "desc",
       categoryId = "",
+      status = "", // ✅ New status parameter
     } = params
 
     const constraints: QueryConstraint[] = []
@@ -130,17 +129,36 @@ export const getProducts = async (
     // ✅ Apply category filter
     if (categoryId) {
       constraints.push(where("categoryId", "==", categoryId))
-      // Firestore requires orderBy on filtered field
-      constraints.push(orderBy("categoryId"))
-      constraints.push(orderBy(sortBy, sortOrder))
-    } else {
-      constraints.push(orderBy(sortBy, sortOrder))
+    }
+
+    // ✅ Apply status filter - NEW
+    if (status) {
+      constraints.push(where("status", "==", status))
     }
 
     // ✅ Add search
     if (search) {
       constraints.push(where("productName", ">=", search))
       constraints.push(where("productName", "<=", search + "\uf8ff"))
+    }
+
+    // ✅ Order by - handle multiple where clauses properly
+    if (categoryId && status) {
+      // If both filters are applied, order by categoryId first, then status, then sortBy
+      constraints.push(orderBy("categoryId"))
+      constraints.push(orderBy("status"))
+      constraints.push(orderBy(sortBy, sortOrder))
+    } else if (categoryId) {
+      // If only category filter
+      constraints.push(orderBy("categoryId"))
+      constraints.push(orderBy(sortBy, sortOrder))
+    } else if (status) {
+      // If only status filter
+      constraints.push(orderBy("status"))
+      constraints.push(orderBy(sortBy, sortOrder))
+    } else {
+      // No filters, just sort
+      constraints.push(orderBy(sortBy, sortOrder))
     }
 
     // Base query
@@ -194,7 +212,6 @@ export const getProducts = async (
     throw error
   }
 }
-
 
 // Get a single product by ID
 export const getProductById = async (id: string): Promise<Product | null> => {

@@ -1,40 +1,20 @@
 import { NextResponse } from 'next/server';
-import { getCategories, updateCategory, deleteCategory } from '@/lib/services/categoryService';
+import { updateCategory, deleteCategory } from '@/lib/services/categoryService';
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const categories = await getCategories();
-    const category = categories.find((cat) => cat.id === params.id);
-    
-    if (!category) {
-      return NextResponse.json(
-        { error: 'Category not found' },
-        { status: 404 }
-      );
-    }
-    
-    return NextResponse.json(category);
-  } catch (error) {
-    console.error('Error fetching category:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch category' },
-      { status: 500 }
-    );
-  }
-}
-
+// PUT /api/categories/[id]
 export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
+    const { id } = params;
     const formData = await request.formData();
-    const name = formData.get('name') as string | null;
+    
+    const name = formData.get('name') as string;
+    const status = (formData.get('status') as string) || 'active';
     const imageFile = formData.get('image') as File | null;
-    const oldImageUrl = formData.get('oldImageUrl') as string | null;
+
+    console.log('PUT - Updating category:', { id, name, status });
 
     if (!name) {
       return NextResponse.json(
@@ -43,17 +23,30 @@ export async function PUT(
       );
     }
 
+    if (!['active', 'inactive'].includes(status)) {
+      return NextResponse.json(
+        { error: 'Status must be either active or inactive' },
+        { status: 400 }
+      );
+    }
+
+    // Get old image URL from query params if provided (for cleanup)
+    const { searchParams } = new URL(request.url);
+    const oldImageUrl = searchParams.get('oldImageUrl') || undefined;
+
     await updateCategory(
-      params.id,
-      { name },
-      imageFile || undefined,
-      oldImageUrl || undefined
+      id, 
+      { 
+        name, 
+        status: status as 'active' | 'inactive' 
+      }, 
+      imageFile || undefined, 
+      oldImageUrl
     );
 
-    return NextResponse.json(
-      { message: 'Category updated successfully' },
-      { status: 200 }
-    );
+    return NextResponse.json({
+      message: 'Category updated successfully'
+    });
   } catch (error) {
     console.error('Error updating category:', error);
     return NextResponse.json(
@@ -63,27 +56,28 @@ export async function PUT(
   }
 }
 
+// DELETE /api/categories/[id]
 export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
+    const { id } = params;
     const { searchParams } = new URL(request.url);
     const imageUrl = searchParams.get('imageUrl');
-    
+
     if (!imageUrl) {
       return NextResponse.json(
-        { error: 'Image URL is required for deletion' },
+        { error: 'Image URL is required' },
         { status: 400 }
       );
     }
 
-    await deleteCategory(params.id, imageUrl);
-    
-    return NextResponse.json(
-      { message: 'Category deleted successfully' },
-      { status: 200 }
-    );
+    await deleteCategory(id, imageUrl);
+
+    return NextResponse.json({
+      message: 'Category deleted successfully'
+    });
   } catch (error) {
     console.error('Error deleting category:', error);
     return NextResponse.json(

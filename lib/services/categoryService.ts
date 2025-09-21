@@ -1,11 +1,12 @@
 import { db, storage } from "@/lib/firebase";
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, orderBy, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, orderBy, serverTimestamp, getDoc, where } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 
 export interface Category {
   id?: string;
   name: string;
   imageUrl: string;
+  status: "active" | "inactive";
   createdAt?: any;
   updatedAt?: any;
 }
@@ -16,10 +17,8 @@ const categoriesRef = collection(db, 'categories');
 const convertTimestamps = (data: any) => {
   if (!data) return data;
   
-  // Create a new object to avoid modifying the original
   const result = { ...data };
   
-  // Convert Firestore timestamps to JavaScript Date objects
   if (data.createdAt && typeof data.createdAt.toDate === 'function') {
     result.createdAt = data.createdAt.toDate();
   }
@@ -31,19 +30,92 @@ const convertTimestamps = (data: any) => {
   return result;
 };
 
-export const getCategories = async (): Promise<Category[]> => {
+// Get all categories (no filtering)
+export const getAllCategories = async (): Promise<Category[]> => {
   try {
     const q = query(categoriesRef, orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
+    
     return querySnapshot.docs.map(doc => {
       const data = doc.data();
       return {
         id: doc.id,
+        name: data.name,
+        imageUrl: data.imageUrl,
+        status: data.status || 'active',
         ...convertTimestamps(data)
       } as Category;
     });
   } catch (error) {
+    console.error('Error getting all categories:', error);
+    throw error;
+  }
+};
+
+// Get categories filtered by status only
+export const getCategoriesByStatus = async (status: string): Promise<Category[]> => {
+  try {
+    // Simple query with only where clause to avoid compound index issues
+    const q = query(categoriesRef, where('status', '==', status));
+    const querySnapshot = await getDocs(q);
+    
+    const categories = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        name: data.name,
+        imageUrl: data.imageUrl,
+        status: data.status || 'active',
+        ...convertTimestamps(data)
+      } as Category;
+    });
+
+    // Sort manually in JavaScript since we can't use orderBy with where without compound index
+    return categories.sort((a, b) => {
+      const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bDate - aDate; // Descending order (newest first)
+    });
+  } catch (error) {
+    console.error('Error getting categories by status:', error);
+    throw error;
+  }
+};
+
+// Main function that handles both filtered and unfiltered requests
+export const getCategories = async (statusFilter?: string): Promise<Category[]> => {
+  try {
+    if (statusFilter && statusFilter !== '') {
+      return await getCategoriesByStatus(statusFilter);
+    } else {
+      return await getAllCategories();
+    }
+  } catch (error) {
     console.error('Error getting categories:', error);
+    throw error;
+  }
+};
+
+// Get categories by category ID (keep for backward compatibility)
+export const getCategoriesByCategory = async (categoryId: string): Promise<Category[]> => {
+  try {
+    const categoryDoc = doc(db, 'categories', categoryId);
+    const docSnap = await getDoc(categoryDoc);
+    
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return [{
+        id: docSnap.id,
+        name: data.name,
+        imageUrl: data.imageUrl,
+        status: data.status || 'active',
+        ...convertTimestamps(data)
+      } as Category];
+    } else {
+      return [];
+    }
+  } catch (error) {
+    console.error('Error getting categories by category:', error);
     throw error;
   }
 };
@@ -55,10 +127,13 @@ export const addCategory = async (category: Omit<Category, 'id' | 'createdAt' | 
     await uploadBytes(storageRef, imageFile);
     const imageUrl = await getDownloadURL(storageRef);
 
-    // Add category to Firestore
+    console.log('Adding category with data:', { ...category, imageUrl }); // Debug log
+
+    // Add category to Firestore with status
     const docRef = await addDoc(categoriesRef, {
-      ...category,
+      name: category.name,
       imageUrl,
+      status: category.status || 'active',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
@@ -73,7 +148,15 @@ export const addCategory = async (category: Omit<Category, 'id' | 'createdAt' | 
 export const updateCategory = async (id: string, category: Partial<Category>, imageFile?: File, oldImageUrl?: string): Promise<void> => {
   try {
     const categoryRef = doc(db, 'categories', id);
-    const updateData: any = { ...category, updatedAt: serverTimestamp() };
+    const updateData: any = { 
+      updatedAt: serverTimestamp() 
+    };
+
+    // Add fields that are being updated
+    if (category.name) updateData.name = category.name;
+    if (category.status) updateData.status = category.status;
+
+    console.log('Updating category with data:', updateData); // Debug log
 
     if (imageFile) {
       // If new image is provided, upload it and update the URL
@@ -88,7 +171,6 @@ export const updateCategory = async (id: string, category: Partial<Category>, im
           await deleteObject(oldImageRef);
         } catch (error) {
           console.error('Error deleting old image:', error);
-          // Continue even if old image deletion fails
         }
       }
     }
@@ -106,7 +188,6 @@ export const deleteCategory = async (id: string, imageUrl: string): Promise<void
     const imageRef = ref(storage, imageUrl);
     await deleteObject(imageRef).catch(error => {
       console.error('Error deleting image:', error);
-      // Continue with deleting the document even if image deletion fails
     });
 
     // Delete the document from Firestore

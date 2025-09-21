@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast"
 import { X, Plus } from "lucide-react"
 import AdvancedCKEditor from "@/components/common/advanced-ckeditor"
 import Modal from "@/components/common/Modal"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export interface OfferFormData {
   id?: string
@@ -410,22 +411,35 @@ export default function TableModalOfferData({
                   <label className="block text-sm font-medium text-gray-700">
                     Category <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    name="categoryId"
-                    value={formData.categoryId || ''}
-                    onChange={handleChange}
-                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.categoryId ? 'border-red-500' : 'border-gray-300'}`}
+
+                  <Select
+                    value={formData.categoryId || ""}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, categoryId: value })
+                    }
                     disabled={isSubmitting}
                   >
-                    <option value="">Select a category</option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.categoryId && <p className="text-red-500 text-sm mt-1">{errors.categoryId}</p>}
+                    <SelectTrigger
+                      className={`w-full border rounded-md shadow-sm px-2 py-2 cursor-pointer ${errors.categoryId ? "border-red-500" : "border-gray-300"
+                        }`}
+                    >
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id!}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {errors.categoryId && (
+                    <p className="text-red-500 text-sm mt-1">{errors.categoryId}</p>
+                  )}
                 </div>
+
 
                 {/* Offer Type */}
                 <div className="w-full lg:w-[25%] space-y-2">
@@ -465,31 +479,26 @@ export default function TableModalOfferData({
                   <label className="block text-sm font-medium text-gray-700">
                     Status
                   </label>
-                  <div className="flex items-center">
-                    <span className="mr-3 text-sm font-medium text-gray-700">
-                      {formData.status === 'active' ? 'Active' : 'Inactive'}
-                    </span>
-                    <button
-                      type="button"
-                      className={`${formData.status === 'active' ? 'bg-blue-600' : 'bg-gray-200'
-                        } relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
-                      role="switch"
-                      aria-checked={formData.status === 'active'}
-                      onClick={() => {
-                        setFormData({
-                          ...formData,
-                          status: formData.status === 'active' ? 'inactive' : 'active',
-                        });
-                      }}
-                      disabled={isSubmitting}
-                    >
-                      <span
-                        aria-hidden="true"
-                        className={`${formData.status === 'active' ? 'translate-x-5' : 'translate-x-0'
-                          } pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200`}
-                      />
-                    </button>
-                  </div>
+
+                  <Select
+                    value={formData.status} // default value will be 'active'
+                    onValueChange={(value) =>
+                      setFormData({
+                        ...formData,
+                        status: value as "active" | "inactive",
+                      })
+                    }
+                    disabled={isSubmitting}
+                  >
+                    <SelectTrigger className="w-full border rounded-md shadow-sm px-2 py-2 cursor-pointer">
+                      <SelectValue placeholder="Select Status" />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -529,50 +538,73 @@ export default function TableModalOfferData({
 
                 {/* Discount/Price Type */}
                 <div className="w-full lg:w-1/2 space-y-2">
-                  {formData.discountType === 'percentage' ? (
+                  {formData.discountType === "percentage" ? (
                     <>
                       <label className="block text-sm font-medium text-gray-700">
                         Discount Type <span className="text-red-500">*</span>
                       </label>
-                      <select
-                        name="discountLabel"
-                        value={formData.discountLabel || ''}
-                        onChange={handleChange}
-                        className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.discountLabel ? 'border-red-500' : 'border-gray-300'}`}
+
+                      <Select
+                        value={formData.discountLabel || ""}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, discountLabel: value })
+                        }
                         disabled={isSubmitting}
                       >
-                        <option value="">Select discount type</option>
-                        {discountTypeOptions.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.discountLabel && <p className="text-red-500 text-sm mt-1">{errors.discountLabel}</p>}
+                        <SelectTrigger
+                          className={`w-full border rounded-md shadow-sm px-2 py-2 cursor-pointer ${errors.discountLabel ? "border-red-500" : "border-gray-300"
+                            }`}
+                        >
+                          <SelectValue placeholder="Select discount type" />
+                        </SelectTrigger>
+
+                        <SelectContent>
+                          {discountTypeOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.discountLabel && (
+                        <p className="text-red-500 text-sm mt-1">{errors.discountLabel}</p>
+                      )}
                     </>
                   ) : (
                     <>
                       <label className="block text-sm font-medium text-gray-700">
                         Price Type <span className="text-red-500">*</span>
                       </label>
-                      <select
-                        name="priceLabel"
-                        value={formData.priceLabel || ''}
-                        onChange={handleChange}
-                        className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.priceLabel ? 'border-red-500' : 'border-gray-300'}`}
+
+                      <Select
+                        value={formData.priceLabel || ""}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, priceLabel: value })
+                        }
                         disabled={isSubmitting}
                       >
-                        <option value="">Select price type</option>
-                        {priceTypeOptions.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.priceLabel && <p className="text-red-500 text-sm mt-1">{errors.priceLabel}</p>}
+                        <SelectTrigger
+                          className={`w-full border rounded-md shadow-sm px-2 py-2 cursor-pointer ${errors.priceLabel ? "border-red-500" : "border-gray-300"
+                            }`}
+                        >
+                          <SelectValue placeholder="Select price type" />
+                        </SelectTrigger>
+
+                        <SelectContent>
+                          {priceTypeOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.priceLabel && (
+                        <p className="text-red-500 text-sm mt-1">{errors.priceLabel}</p>
+                      )}
                     </>
                   )}
                 </div>
+
               </div>
             </div>
 
