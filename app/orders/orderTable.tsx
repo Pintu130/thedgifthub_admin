@@ -19,7 +19,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
   onSort,
   onViewOrder,
 }) => {
-  const getStatusBadge = (status: string, type: "order" | "payment" | "fulfillment") => {
+  const getStatusBadge = (status: string, type: "order" | "payment") => {
     const baseClasses = "px-2 py-1 text-xs font-medium rounded-full"
 
     if (type === "order") {
@@ -56,17 +56,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
       }
     }
 
-    // fulfillment
-    switch (status) {
-      case "fulfilled":
-        return `${baseClasses} bg-green-100 text-green-800`
-      case "unfulfilled":
-        return `${baseClasses} bg-red-100 text-red-800`
-      case "partially_fulfilled":
-        return `${baseClasses} bg-yellow-100 text-yellow-800`
-      default:
-        return `${baseClasses} bg-gray-100 text-gray-800`
-    }
+
   }
 
   const SortButton: React.FC<{ field: keyof Order; children: React.ReactNode }> = ({
@@ -116,7 +106,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
                 // "Date",
                 "Status",
                 "Payment",
-                "Fulfillment",
                 "Total",
                 "Payment Method",
                 "Actions",
@@ -168,11 +157,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
                 <td className="px-5 py-4 whitespace-nowrap">
                   <span className={getStatusBadge(order.payment_status, "payment")}>
                     {order.payment_status}
-                  </span>
-                </td>
-                <td className="px-5 py-4 whitespace-nowrap">
-                  <span className={getStatusBadge(order.fulfillment_status, "fulfillment")}>
-                    {order.fulfillment_status.replace("_", " ")}
                   </span>
                 </td>
                 <td className="px-5 py-4 whitespace-nowrap">

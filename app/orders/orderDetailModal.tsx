@@ -29,52 +29,48 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order, isOpen, on
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/50" aria-hidden="true" />
+
+      {/* Modal Container */}
+      <div
+        className="relative bg-white rounded-2xl shadow-xl mx-4 max-h-[80vh] flex flex-col overflow-hidden z-10"
+        style={{ width: '60rem' }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-4 border-b border-[#EADFC8]">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">{order.order_number}</h2>
+            <h3 className="text-lg font-semibold text-[#4B3F2F]">{order.order_number}</h3>
             <p className="text-sm text-gray-500">Order placed on {formatDate(order.order_date)}</p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <X className="h-6 w-6 text-gray-500" />
-          </button>
+          <div className="flex space-x-2 items-center">
+            {/* Order Status Badge */}
+            <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 capitalize">
+              {order.order_status}
+            </span>
+            
+            {/* Payment Badge */}
+            <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 capitalize">
+              {order.payment_status}
+            </span>
+            
+            {/* Shipping Badge */}
+            <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800 capitalize">
+              {order.shipping_status}
+            </span>
+            
+            <button
+              onClick={onClose}
+              className="transition-colors"
+              aria-label="Close"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
-        <div className="p-6 space-y-8">
-          {/* Order Summary */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <div className="flex items-center space-x-2 mb-2">
-                <Package className="h-5 w-5 text-blue-600" />
-                <h3 className="font-semibold text-gray-900">Order Status</h3>
-              </div>
-              <p className="text-2xl font-bold text-blue-600 capitalize">{order.order_status}</p>
-              <p className="text-sm text-gray-600 mt-1">Fulfillment: {order.fulfillment_status.replace('_', ' ')}</p>
-            </div>
-
-            <div className="bg-green-50 p-4 rounded-lg">
-              <div className="flex items-center space-x-2 mb-2">
-                <CreditCard className="h-5 w-5 text-green-600" />
-                <h3 className="font-semibold text-gray-900">Payment</h3>
-              </div>
-              <p className="text-2xl font-bold text-green-600 capitalize">{order.payment_status}</p>
-              <p className="text-sm text-gray-600 mt-1">{order.payment_method}</p>
-            </div>
-
-            <div className="bg-purple-50 p-4 rounded-lg">
-              <div className="flex items-center space-x-2 mb-2">
-                <Truck className="h-5 w-5 text-purple-600" />
-                <h3 className="font-semibold text-gray-900">Shipping</h3>
-              </div>
-              <p className="text-2xl font-bold text-purple-600 capitalize">{order.shipping_status}</p>
-              <p className="text-sm text-gray-600 mt-1">{order.shipping_method}</p>
-            </div>
-          </div>
+        <div className="p-4 overflow-y-auto scrollbar-custom flex-1 space-y-8">
 
           {/* Customer Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -137,6 +133,45 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order, isOpen, on
                       <td className="px-4 py-3 text-right font-medium">{formatCurrency(item.product_total)}</td>
                     </tr>
                   ))}
+                  {/* Sample data rows */}
+                  <tr>
+                    <td className="px-4 py-3">
+                      <div>
+                        <p className="font-medium text-gray-900">Sample Product 1</p>
+                        <p className="text-sm text-gray-500">SKU: SP-001</p>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-center">2</td>
+                    <td className="px-4 py-3 text-right">$29.99</td>
+                    <td className="px-4 py-3 text-right font-medium">$59.98</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-3">
+                      <div>
+                        <p className="font-medium text-gray-900">Sample Product 2</p>
+                        <p className="text-sm text-gray-500">SKU: SP-002</p>
+                        <div className="flex items-center space-x-1 mt-1">
+                          <Gift className="h-3 w-3 text-pink-500" />
+                          <span className="text-xs text-pink-600">Gift Wrapped</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">"Happy Birthday!"</p>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-center">1</td>
+                    <td className="px-4 py-3 text-right">$49.99</td>
+                    <td className="px-4 py-3 text-right font-medium">$49.99</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-3">
+                      <div>
+                        <p className="font-medium text-gray-900">Sample Product 3</p>
+                        <p className="text-sm text-gray-500">SKU: SP-003</p>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-center">3</td>
+                    <td className="px-4 py-3 text-right">$19.99</td>
+                    <td className="px-4 py-3 text-right font-medium">$59.97</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
