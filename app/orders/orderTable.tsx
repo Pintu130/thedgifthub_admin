@@ -105,7 +105,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
                 "Customer",
                 // "Date",
                 "Status",
-                "Payment",
                 "Total",
                 "Payment Method",
                 "Actions",
@@ -155,11 +154,6 @@ const OrderTable: React.FC<OrderTableProps> = ({
                   </span>
                 </td>
                 <td className="px-5 py-4 whitespace-nowrap">
-                  <span className={getStatusBadge(order.payment_status, "payment")}>
-                    {order.payment_status}
-                  </span>
-                </td>
-                <td className="px-5 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">
                     {formatCurrency(order.grand_total, order.currency)}
                   </div>
@@ -168,7 +162,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
                   </div>
                 </td>
                 <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {order.payment_method}
+                  Stripe
                   {order.transaction_id && (
                     <div className="text-sm text-gray-500">{order.transaction_id}</div>
                   )}

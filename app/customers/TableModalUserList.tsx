@@ -3,8 +3,9 @@
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { useToast } from "@/hooks/use-toast"
-import { collection, addDoc, updateDoc, doc } from "firebase/firestore"
+import { collection, addDoc, doc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
+import { updateUser } from "@/lib/services/customerService"
 import Modal from "@/components/common/Modal"
 import FormInput from "@/components/common/FormInput"
 import FormSelect from "@/components/common/FormSelect"
@@ -36,7 +37,7 @@ interface UserFormData {
   activityStatus?: string
   notes?: string
   // New address fields
-  image?: string[]
+  image?: (string | File)[]
   addressType?: string
   pincode?: string
   state?: string
@@ -172,8 +173,6 @@ export default function TableModalUserList({
       newErrors.activityStatus = "Status is required"
     }
 
-
-
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -218,8 +217,8 @@ export default function TableModalUserList({
       }
 
       if (isEditMode) {
-        const userRef = doc(db, "users", formData.id!)
-        await updateDoc(userRef, payload)
+        // Use the customer service to update the user with proper image handling
+        await updateUser(formData.id!, payload)
 
         toast({
           title: "Success",
@@ -242,7 +241,7 @@ export default function TableModalUserList({
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Something went wrong while saving user",
+        description: error.message || "Something went wrong while saving user",
       })
     } finally {
       setIsSubmitting(false)
@@ -255,7 +254,6 @@ export default function TableModalUserList({
 
     const files = Array.from(e.target.files)
     const validFiles: File[] = []
-    const newImageUrls: string[] = []
 
     files.forEach((file) => {
       if (!file.type.startsWith("image/")) {
@@ -277,13 +275,13 @@ export default function TableModalUserList({
       }
 
       validFiles.push(file)
-      newImageUrls.push(URL.createObjectURL(file))
     })
 
     if (validFiles.length > 0) {
-      // For simplicity, we'll replace the current images with new ones
-      // In a real app, you might want to append or have a more sophisticated approach
-      setFormData({ ...formData, image: newImageUrls })
+      // For customer images, we only allow one image
+      // Replace all existing images with the new one
+      const newImages = [validFiles[0]] // Only take the first file
+      setFormData({ ...formData, image: newImages })
 
       // Clear image errors
       setErrors((prev) => {
@@ -305,7 +303,7 @@ export default function TableModalUserList({
     const removedImage = newImages.splice(index, 1)[0]
 
     // Revoke the object URL if it's a blob URL
-    if (removedImage?.startsWith("blob:")) {
+    if (typeof removedImage === "string" && removedImage.startsWith("blob:")) {
       URL.revokeObjectURL(removedImage)
     }
 
@@ -361,7 +359,7 @@ export default function TableModalUserList({
               accept="image/*"
               className="hidden"
               disabled={isSubmitting}
-              multiple
+              multiple={false} // Only allow single file selection
             />
 
             {/* 🔹 Always show box */}
@@ -376,7 +374,7 @@ export default function TableModalUserList({
                   {formData.image.map((img, index) => (
                     <div key={index} className="relative">
                       <img
-                        src={img}
+                        src={typeof img === "string" ? img : URL.createObjectURL(img)}
                         alt={`Preview ${index}`}
                         className="h-20 w-20 object-cover rounded-md border border-gray-300"
                       />

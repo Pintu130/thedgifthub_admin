@@ -12,14 +12,42 @@ import { useToast } from "@/hooks/use-toast"
 import Modal from "@/components/common/Modal"
 import TableModalUserList from "@/app/customers/TableModalUserList"
 import type { ColDef } from "ag-grid-community"
-import { collection, getDocs, deleteDoc, doc, query, where, Query } from "firebase/firestore"
+import { collection, getDocs, doc, query, where, Query } from "firebase/firestore"
 import { db } from "@/lib/firebase"
+import { deleteUser } from "@/lib/services/customerService"
 import ViewUserModal from "../common/ViewUserModal"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 
 interface UserFormData {
   id?: string
+  firstName: string
+  lastName: string
+  email: string
+  phoneNumber: string
+  // Removed old address fields
+  // address: string
+  // city: string
+  gender: string
+  dob?: string
+  orderCount?: number
+  lastOrderDate?: string
+  wishlistCount?: number
+  supportRequestCount?: number
+  activityStatus?: string
+  notes?: string
+  // New address fields
+  image?: (string | File)[]
+  addressType?: string
+  pincode?: string
+  state?: string
+  houseNo?: string
+  roadName?: string
+  landmark?: string
+}
+
+interface User {
+  id: string
   firstName: string
   lastName: string
   email: string
@@ -43,10 +71,6 @@ interface UserFormData {
   houseNo?: string
   roadName?: string
   landmark?: string
-}
-
-interface User extends UserFormData {
-  id: string
   createdAt?: any
   updatedAt?: any
 }
@@ -211,7 +235,8 @@ const UsersData = () => {
     if (!userToDelete?.id) return
     setIsDeleting(true)
     try {
-      await deleteDoc(doc(db, "users", userToDelete.id))
+      // Use the customer service to delete the user with proper image cleanup
+      await deleteUser(userToDelete.id)
       toast({
         title: "Success",
         description: "Customer deleted successfully",

@@ -155,12 +155,12 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
       href: "/orders",
       active: pathname === "/orders",
     },
-    {
-      label: "Order Shipping", // Page title
-      icon: Truck,             // Icon representing shipping
-      href: "/order-shipping", // Page path
-      active: pathname === "/order-shipping", // Active state
-    },
+    // {
+    //   label: "Order Shipping", // Page title
+    //   icon: Truck,             // Icon representing shipping
+    //   href: "/order-shipping", // Page path
+    //   active: pathname === "/order-shipping", // Active state
+    // },
   ]
 
   // Admin section routes

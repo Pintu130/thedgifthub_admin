@@ -68,16 +68,6 @@ export default function ViewUserModal({ user, onClose }: Props) {
     return "bg-red-100 text-red-800 border-red-200"
   }
 
-  // Handle image download
-  const handleDownloadImage = (imageUrl: string, index: number) => {
-    // Create a temporary link
-    const link = document.createElement('a');
-    link.href = imageUrl;
-    link.download = `customer-image-${index + 1}.jpg`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -128,22 +118,17 @@ export default function ViewUserModal({ user, onClose }: Props) {
                   <div className="p-4 flex-1 flex flex-col">
                     <div className="flex items-start gap-4 mb-4">
                       {/* Profile Image */}
-                      {user.image && user.image.length > 0 && (
-                        <div className="relative group">
-                          <img
-                            src={user.image[0]}
-                            alt="Profile"
-                            className="w-16 h-16 rounded-full object-cover border-2 border-[#A30000]/30"
-                          />
-                          <button
-                            onClick={() => handleDownloadImage(user.image![0], 0)}
-                            className="absolute -bottom-1 -right-1 bg-[#A30000] rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="Download image"
-                          >
-                            <Download className="w-3 h-3 text-white" />
-                          </button>
-                        </div>
-                      )}
+                      <div className="relative group">
+                        <img
+                          src={
+                            user.image && user.image.length > 0
+                              ? user.image[0]
+                              : "/dumy.jpg" // public folder માં રાખેલ dummy image
+                          }
+                          alt="Profile"
+                          className="w-16 h-16 rounded-full object-cover border-2 border-[#A30000]/30"
+                        />
+                      </div>
                       <div>
                         <h4 className="text-lg font-bold text-[#A30000] mb-1">
                           {user.firstName} {user.lastName}
