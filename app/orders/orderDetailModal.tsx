@@ -75,7 +75,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order, isOpen, on
           {/* Customer Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="font-semibold text-gray-900 mb-3">Customer Information</h3>
+              <h3 className="font-semibold text-gray-900 mb-3">Customer Informations</h3>
               <div className="space-y-2">
                 <p><span className="font-medium">Name:</span> {order.customer_name}</p>
                 <p><span className="font-medium">Email:</span> {order.customer_email}</p>
