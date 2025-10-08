@@ -24,6 +24,7 @@ import {
   BadgePercent,
   ShoppingCart,
   Truck,
+  FileText,
 } from "lucide-react"
 import { MdCategory } from "react-icons/md"
 import Image from "next/image"
@@ -154,6 +155,12 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
       icon: ShoppingCart,
       href: "/orders",
       active: pathname === "/orders",
+    },
+    {
+      label: "Product Print",
+      icon: FileText,
+      href: "/product-print",
+      active: pathname === "/product-print",
     },
     // {
     //   label: "Order Shipping", // Page title

@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { Search, Filter, Calendar, Download, X } from "lucide-react"
+import { Search, Calendar, Download, X } from "lucide-react"
 import { OrderFilters as OrderFiltersType } from "@/types/order"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -121,14 +121,41 @@ const OrderFilters: React.FC<OrderFiltersProps> = ({ filters, onFiltersChange, o
       `}</style>
 
       <CardContent className="p-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 gap-4">
-          <div className="flex items-center space-x-2">
-            <div className="p-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg">
-              <Filter className="h-5 w-5" />
+        <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+          {/* Left side: Search and Status */}
+          <div className="flex flex-col sm:flex-row gap-3 flex-1">
+            {/* Search */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search orders, customers..."
+                value={filters.search}
+                onChange={(e) => updateFilter("search", e.target.value)}
+                className="pl-10 pr-3 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+            
+            {/* Order Status - Using shadcn Select */}
+            <div className="w-full sm:w-48">
+              <Select value={filters.status || "all"} onValueChange={(value) => updateFilter("status", value === "all" ? "" : value)}>
+                <SelectTrigger className="border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="shipped">Shipped</SelectItem>
+                  <SelectItem value="delivered">Delivered</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="refunded">Refunded</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           
+          {/* Right side: Date Picker and Export */}
           <div className="flex items-center gap-2">
             {/* Date Range Picker Button */}
             <div className="relative">
@@ -138,7 +165,8 @@ const OrderFilters: React.FC<OrderFiltersProps> = ({ filters, onFiltersChange, o
                 className="flex items-center gap-2 bg-[#FFF9F0] border-[#E5D5B7] hover:bg-[#FFFFFF] text-gray-900"
               >
                 <Calendar className="h-4 w-4" />
-                {getDateRangeText()}
+                <span className="hidden sm:inline">{getDateRangeText()}</span>
+                <span className="sm:hidden">Dates</span>
               </Button>
               
               {isCustomRangeApplied && (
@@ -204,39 +232,9 @@ const OrderFilters: React.FC<OrderFiltersProps> = ({ filters, onFiltersChange, o
               className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-white font-medium shadow-md hover:shadow-lg transition-all duration-300"
             >
               <Download className="h-4 w-4" />
-              <span>Export</span>
+              <span className="hidden sm:inline">Export</span>
             </button>
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search orders, customers..."
-              value={filters.search}
-              onChange={(e) => updateFilter("search", e.target.value)}
-              className="pl-10 pr-3 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
-          {/* Order Status - Using shadcn Select */}
-          <Select value={filters.status || "all"} onValueChange={(value) => updateFilter("status", value === "all" ? "" : value)}>
-            <SelectTrigger className="border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-              <SelectValue placeholder="All Statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="confirmed">Confirmed</SelectItem>
-              <SelectItem value="shipped">Shipped</SelectItem>
-              <SelectItem value="delivered">Delivered</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-              <SelectItem value="refunded">Refunded</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
       </CardContent>
     </Card>
