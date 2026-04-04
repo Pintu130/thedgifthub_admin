@@ -88,6 +88,7 @@ const CategoriesData = () => {
       }
       const data = await response.json()
       setAllCategories(data)
+      return data
     } catch (error) {
       console.error("Error fetching all categories:", error)
       toast({
@@ -95,6 +96,7 @@ const CategoriesData = () => {
         description: "Failed to load categories for dropdown. Please try again.",
         variant: "destructive",
       })
+      return []
     }
   }, [toast])
 
@@ -216,9 +218,32 @@ const CategoriesData = () => {
 
   // Initialize component - fetch categories on mount
   useEffect(() => {
-    fetchAllCategories()
-    fetchCategories()
-  }, [fetchAllCategories, fetchCategories])
+    const initializeCategories = async () => {
+      try {
+        const response = await fetch("/api/categories")
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.details || "Failed to fetch categories")
+        }
+        const data = await response.json()
+        setAllCategories(data)
+        setCategories(data)
+        setFilteredCategories(data)
+      } catch (error) {
+        console.error("Error fetching categories:", error)
+        setIsError(true)
+        toast({
+          title: "Error",
+          description: "Failed to load categories. Please try again.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    initializeCategories()
+  }, []) // Empty dependency array - run only once on mount
 
   // Reset form
   const resetForm = () => {
@@ -514,13 +539,13 @@ const CategoriesData = () => {
             </div>
           )}
 
-          <div className="ag-theme-alpine" style={{ height: "300px", width: "100%" }}>
+          <div className="ag-theme-alpine" style={{ height: "calc(100vh - 380px)", width: "100%", minHeight: "400px" }}>
             <AgGridReact
               rowData={filteredCategories}
               columnDefs={columnDefs}
               defaultColDef={defaultColDef}
               pagination={true}
-              paginationPageSize={5}
+              paginationPageSize={20}
               suppressCellFocus={true}
               onGridReady={onGridReady}
               rowHeight={50}

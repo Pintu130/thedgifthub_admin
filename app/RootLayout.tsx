@@ -20,14 +20,14 @@ export default function RootLayout({
         <DashboardHeader />
       </div>
 
-      <div className="flex pt-16"> {/* pt-16 = height of header (h-16 = 64px) */}
-        {/* Sidebar */}
-        <div className="hidden md:block fixed top-16 left-0 h-[calc(100vh-64px)] w-72 z-40">
+      <div className="flex pt-16">
+        {/* Sidebar — md se xl tak w-56 (224px), xl+ pe w-64 (256px) */}
+        <div className="hidden md:block fixed top-16 left-0 h-[calc(100vh-64px)] w-56 xl:w-64 z-40">
           <DashboardSidebar />
         </div>
 
-        {/* Main content with margin to avoid sidebar overlap */}
-        <main className="flex-1 md:ml-72 p-4 md:p-6 overflow-auto h-[calc(100vh-64px)]">
+        {/* Main content — sidebar width ke hisaab se margin */}
+        <main className="flex-1 md:ml-56 xl:ml-64 p-4 md:p-6 overflow-auto h-[calc(100vh-64px)]">
           {children}
         </main>
       </div>
