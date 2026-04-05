@@ -64,6 +64,8 @@ export async function POST(request: Request) {
       description: (formData.get("description") as string) || "",
       status: (formData.get("status") as string) || "inactive",
       outOfStock: (formData.get("outOfStock") as string) || "no", // Added outOfStock field
+      isBestSell: (formData.get("isBestSell") as string) || "no", // Added isBestSell field
+      isCorporateGifts: (formData.get("isCorporateGifts") as string) || "no", // Added isCorporateGifts field
       slug: (formData.get("slug") as string) || "", // Added slug field
       activity: 1, // Default active
       // Shipping details

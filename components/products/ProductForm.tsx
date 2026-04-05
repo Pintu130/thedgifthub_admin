@@ -29,6 +29,8 @@ interface FormErrors {
   status?: string
   categoryId?: string
   outOfStock?: string
+  isBestSell?: string
+  isCorporateGifts?: string
   // Shipping errors
   length?: string
   breadth?: string
@@ -74,6 +76,8 @@ export default function ProductForm({
     description: "",
     status: "inactive",
     outOfStock: "no", // Add outOfStock field with default value
+    isBestSell: "no", // Add isBestSell field with default value
+    isCorporateGifts: "no", // Add isCorporateGifts field with default value
     images: [],
     imagesPreviews: [],
     productPrice: 0,
@@ -144,6 +148,8 @@ export default function ProductForm({
             description: product.description || "",
             status: product.status || "inactive",
             outOfStock: product.outOfStock || "no", // Add outOfStock for edit mode
+            isBestSell: product.isBestSell || "no", // Add isBestSell for edit mode
+            isCorporateGifts: product.isCorporateGifts || "no", // Add isCorporateGifts for edit mode
             images: product.images || [],
             imagesPreviews: Array.isArray(product.images) ? product.images : [],
             productPrice: product.productPrice || 0,
@@ -215,6 +221,22 @@ export default function ProductForm({
 
     if (errors.outOfStock) {
       setErrors((prev) => ({ ...prev, outOfStock: undefined }))
+    }
+  }
+
+  const handleIsBestSellChange = (value: "yes" | "no") => {
+    setFormData({ ...formData, isBestSell: value })
+
+    if (errors.isBestSell) {
+      setErrors((prev) => ({ ...prev, isBestSell: undefined }))
+    }
+  }
+
+  const handleIsCorporateGiftsChange = (value: "yes" | "no") => {
+    setFormData({ ...formData, isCorporateGifts: value })
+
+    if (errors.isCorporateGifts) {
+      setErrors((prev) => ({ ...prev, isCorporateGifts: undefined }))
     }
   }
 
@@ -399,6 +421,8 @@ export default function ProductForm({
         description: formData.description,
         status: formData.status,
         outOfStock: formData.outOfStock, // Include outOfStock in the data sent to Firebase
+        isBestSell: formData.isBestSell, // Include isBestSell in the data sent to Firebase
+        isCorporateGifts: formData.isCorporateGifts, // Include isCorporateGifts in the data sent to Firebase
         slug: formData.slug, // Include slug in the data sent to Firebase
         // Shipping details
         length: Number.parseFloat(formData.length || "0") || 0,
@@ -643,9 +667,9 @@ export default function ProductForm({
         </div>
 
         {/* Product details */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
           <FormInput
-            label="Original Price ($)"
+            label="Original Price (₹)"
             type="number"
             name="originalPrice"
             value={formData.originalPrice?.toString() || ""}
@@ -653,7 +677,7 @@ export default function ProductForm({
             placeholder="e.g. 35.00"
           />
           <FormInput
-            label="Amount ($)"
+            label="Amount (₹)"
             name="amount"
             type="number"
             value={formData.amount || ""}
@@ -694,6 +718,54 @@ export default function ProductForm({
             </Select>
             {errors.outOfStock && (
               <p className="text-red-500 text-sm">{errors.outOfStock}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Is Best Sell
+            </label>
+            <Select
+              value={formData.isBestSell || "no"}
+              onValueChange={handleIsBestSellChange}
+              disabled={isSubmitting}
+            >
+              <SelectTrigger
+                className={`w-full border rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.isBestSell ? "border-red-500" : "border-gray-300"
+                  }`}
+              >
+                <SelectValue placeholder="Select Is Best Sell" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="no">No</SelectItem>
+                <SelectItem value="yes">Yes</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.isBestSell && (
+              <p className="text-red-500 text-sm">{errors.isBestSell}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Is Corporate Gifts
+            </label>
+            <Select
+              value={formData.isCorporateGifts || "no"}
+              onValueChange={handleIsCorporateGiftsChange}
+              disabled={isSubmitting}
+            >
+              <SelectTrigger
+                className={`w-full border rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.isCorporateGifts ? "border-red-500" : "border-gray-300"
+                  }`}
+              >
+                <SelectValue placeholder="Select Is Corporate Gifts" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="no">No</SelectItem>
+                <SelectItem value="yes">Yes</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.isCorporateGifts && (
+              <p className="text-red-500 text-sm">{errors.isCorporateGifts}</p>
             )}
           </div>
           <div className="space-y-2">

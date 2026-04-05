@@ -198,8 +198,8 @@ const ProductData = () => {
     {
       headerName: "Image",
       field: "images",
-      minWidth: 120,
-      maxWidth: 150,
+      minWidth: 90,
+      maxWidth: 110,
       cellRenderer: (params: any) => {
         const imageSrc =
           Array.isArray(params.value) && params.value.length > 0
@@ -211,7 +211,7 @@ const ProductData = () => {
             <img
               src={imageSrc || "/placeholder.svg"}
               alt="Product"
-              className="w-10 h-10 rounded-sm border object-cover"
+              className="w-9 h-9 rounded-sm border object-cover"
               onError={(e: any) =>
                 (e.currentTarget.src = "/placeholder.svg?height=40&width=40")
               }
@@ -225,8 +225,8 @@ const ProductData = () => {
       field: "productName",
       flex: 2,
       sortable: true,
-      minWidth: 250,
-      maxWidth: 400,
+      minWidth: 220,
+      maxWidth: 350,
       cellRenderer: (params: any) => (
         <span className="text-sm font-medium text-gray-900">
           {params.value || "No Name"}
@@ -236,10 +236,10 @@ const ProductData = () => {
     {
       headerName: "Status",
       field: "status",
-      flex: 1,
+      flex: 0.8,
       sortable: true,
-      minWidth: 140,
-      maxWidth: 180,
+      minWidth: 100,
+      maxWidth: 120,
       cellRenderer: (params: any) => (
         <span
           className={`px-2 py-1 text-xs rounded-full ${params.value === "active"
@@ -254,10 +254,10 @@ const ProductData = () => {
     {
       headerName: "Out of Stock",
       field: "outOfStock",
-      flex: 1,
+      flex: 0.8,
       sortable: true,
-      minWidth: 140,
-      maxWidth: 180,
+      minWidth: 110,
+      maxWidth: 130,
       cellRenderer: (params: any) => (
         <span
           className={`px-2 py-1 text-xs rounded-full ${params.value === "yes"
@@ -270,12 +270,48 @@ const ProductData = () => {
       ),
     },
     {
-      headerName: "Original Price ($)",
-      field: "originalPrice",
-      flex: 1.5,
+      headerName: "Is Best Sell",
+      field: "isBestSell",
+      flex: 0.8,
       sortable: true,
-      minWidth: 160,
-      maxWidth: 200,
+      minWidth: 110,
+      maxWidth: 130,
+      cellRenderer: (params: any) => (
+        <span
+          className={`px-2 py-1 text-xs rounded-full ${params.value === "yes"
+            ? "bg-purple-100 text-purple-800"
+            : "bg-gray-100 text-gray-800"
+            }`}
+        >
+          {params.value === "yes" ? "Yes" : "No"}
+        </span>
+      ),
+    },
+    {
+      headerName: "Is Corporate Gifts",
+      field: "isCorporateGifts",
+      flex: 0.8,
+      sortable: true,
+      minWidth: 120,
+      maxWidth: 140,
+      cellRenderer: (params: any) => (
+        <span
+          className={`px-2 py-1 text-xs rounded-full ${params.value === "yes"
+            ? "bg-blue-100 text-blue-800"
+            : "bg-gray-100 text-gray-800"
+            }`}
+        >
+          {params.value === "yes" ? "Yes" : "No"}
+        </span>
+      ),
+    },
+    {
+      headerName: "Original Price (₹)",
+      field: "originalPrice",
+      flex: 1.2,
+      sortable: true,
+      minWidth: 130,
+      maxWidth: 150,
       cellRenderer: (params: any) => (
         <div className="flex items-center justify-center h-full w-full">
           <p className="text-sm text-gray-900">
@@ -285,12 +321,12 @@ const ProductData = () => {
       ),
     },
     {
-      headerName: "Discount Price ($)",
+      headerName: "Discount Price (₹)",
       field: "productPrice",
-      flex: 1.5,
+      flex: 1.2,
       sortable: true,
-      minWidth: 160,
-      maxWidth: 200,
+      minWidth: 130,
+      maxWidth: 150,
       cellRenderer: (params: any) => (
         <div className="flex items-center justify-center h-full w-full">
           <p className="text-sm text-gray-900">
@@ -302,9 +338,9 @@ const ProductData = () => {
     {
       headerName: "Discount (%)",
       field: "discountPercentage",
-      flex: 1,
-      minWidth: 140,
-      maxWidth: 180,
+      flex: 0.8,
+      minWidth: 110,
+      maxWidth: 130,
       cellRenderer: (params: any) => (
         <span
           className={`px-2 py-1 text-xs rounded-full ${params.value > 0
@@ -319,17 +355,17 @@ const ProductData = () => {
     {
       headerName: "Actions",
       field: "action",
-      flex: 1,
-      minWidth: 160,
-      maxWidth: 200,
+      flex: 0.8,
+      minWidth: 130,
+      maxWidth: 150,
       cellRenderer: (params: any) => (
-        <div className="flex items-center justify-center gap-2 h-full w-full">
+        <div className="flex items-center justify-center gap-1.5 h-full w-full">
           {/* View button */}
           <button
             onClick={() => handleView(params.data)}
             className="p-1 rounded-full bg-green-50 text-green-600 hover:bg-green-100 transition"
           >
-            <Eye size={16} />
+            <Eye size={15} />
           </button>
 
           {/* Edit button */}
@@ -337,7 +373,7 @@ const ProductData = () => {
             onClick={() => handleEdit(params.data)}
             className="p-1 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition"
           >
-            <Pencil size={16} />
+            <Pencil size={15} />
           </button>
 
           {/* Delete button */}
@@ -345,7 +381,7 @@ const ProductData = () => {
             onClick={() => handleDelete(params.data)}
             className="p-1 rounded-full bg-red-50 text-red-600 hover:bg-red-100 transition"
           >
-            <Trash2 size={16} />
+            <Trash2 size={15} />
           </button>
         </div>
       ),

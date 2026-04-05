@@ -11,6 +11,8 @@ export interface Product {
   description: string
   status: "active" | "inactive"
   outOfStock: string
+  isBestSell: string
+  isCorporateGifts: string
   activity: number
   createdAt: string
   updatedAt: string
@@ -37,6 +39,8 @@ export interface ProductFormData {
   description: string
   status: "active" | "inactive"
   outOfStock: string
+  isBestSell: string
+  isCorporateGifts: string
   images: Array<File | string>
   imagesPreviews: string[]
   productPrice: number
