@@ -74,7 +74,7 @@ export const deleteProductImage = async (imageUrl: string): Promise<void> => {
 }
 
 // Create a new product
-export const createProduct = async (productData: ProductFormData): Promise<string> => {
+export const createProduct = async (productData: any): Promise<string> => {
   try {
     console.log("Starting product creation with data:", productData)
 
@@ -94,9 +94,22 @@ export const createProduct = async (productData: ProductFormData): Promise<strin
       highlights: productData.highlights,
       description: productData.description,
       status: productData.status,
+      outOfStock: productData.outOfStock || "no", // ✅ Include outOfStock
+      isBestSell: productData.isBestSell || "no", // ✅ Include isBestSell
+      isCorporateGifts: productData.isCorporateGifts || "no", // ✅ Include isCorporateGifts
+      slug: productData.slug || "", // ✅ Include slug
       activity: productData.activity || 1,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      // Shipping details
+      length: productData.length || 0,
+      breadth: productData.breadth || 0,
+      height: productData.height || 0,
+      weight: productData.weight || 0,
+      // SEO details
+      metaTitle: productData.metaTitle || "",
+      metaKeywords: productData.metaKeywords || "",
+      metaDescription: productData.metaDescription || "",
     }
 
     console.log("Creating product document:", product)
@@ -234,7 +247,7 @@ export const getProductById = async (id: string): Promise<Product | null> => {
 }
 
 // Update a product
-export const updateProduct = async (id: string, productData: Partial<ProductFormData>): Promise<void> => {
+export const updateProduct = async (id: string, productData: any): Promise<void> => {
   try {
     const docRef = doc(db, COLLECTION_NAME, id)
 
@@ -247,12 +260,12 @@ export const updateProduct = async (id: string, productData: Partial<ProductForm
 
     // Add any existing image URLs (filter out any non-string values)
     if (Array.isArray(productData.images)) {
-      imageUrls = productData.images.filter((img): img is string => typeof img === "string")
+      imageUrls = productData.images.filter((img: any): img is string => typeof img === "string")
     }
 
     // Handle new file uploads
     const newImageFiles = Array.isArray(productData.images)
-      ? productData.images.filter((img): img is File => img instanceof File)
+      ? productData.images.filter((img: any): img is File => img instanceof File)
       : []
 
     if (newImageFiles.length > 0) {
@@ -261,18 +274,34 @@ export const updateProduct = async (id: string, productData: Partial<ProductForm
     }
 
     const updateData: Partial<Product> = {
-      ...productData,
-      categoryId: productData.categoryId, // ✅ Ensure categoryId is included
+      productName: productData.productName,
+      productPrice: productData.productPrice,
+      originalPrice: productData.originalPrice,
+      discountPercentage: productData.discountPercentage,
+      categoryId: productData.categoryId, // 
+      availableOffers: productData.availableOffers,
+      highlights: productData.highlights,
+      description: productData.description,
+      status: productData.status,
+      outOfStock: productData.outOfStock || "no", // 
+      isBestSell: productData.isBestSell || "no", // 
+      isCorporateGifts: productData.isCorporateGifts || "no", // 
+      slug: productData.slug || "", // 
+      activity: productData.activity || 1,
       images: imageUrls,
       updatedAt: new Date().toISOString(),
+      // Shipping details
+      length: productData.length || 0,
+      breadth: productData.breadth || 0,
+      height: productData.height || 0,
+      weight: productData.weight || 0,
+      // SEO details
+      metaTitle: productData.metaTitle || "",
+      metaKeywords: productData.metaKeywords || "",
+      metaDescription: productData.metaDescription || "",
     }
 
-    // Remove form-specific fields
-    delete (updateData as any).imageUrls
-    delete (updateData as any).images
-    updateData.images = imageUrls
-
-    console.log("Updating product with data:", updateData) // ✅ Debug log
+    console.log("Updating product with data:", updateData) // 
 
     // Update the product in Firestore
     await updateDoc(docRef, updateData)
