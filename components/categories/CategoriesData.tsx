@@ -22,10 +22,11 @@ import {
 } from "@/components/ui/select"
 
 interface Category {
-  id: string   // remove the `?`
+  id: string
   name: string
   imageUrl: string
   status: "active" | "inactive"
+  isPublic: boolean
   createdAt?: string
   updatedAt?: string
 }
@@ -35,6 +36,7 @@ interface CategoryFormData {
   image: File | null
   imagePreview: string
   status: "active" | "inactive"
+  isPublic: boolean
 }
 
 const CategoriesData = () => {
@@ -58,6 +60,7 @@ const CategoriesData = () => {
     image: null,
     imagePreview: "",
     status: "active",
+    isPublic: false,
   })
 
   // Format date to dd/MM/yyyy
@@ -144,51 +147,11 @@ const CategoriesData = () => {
     }
   }, [toast])
 
-  // Alternative method: Using dedicated status endpoint - Method 2
-  const fetchCategoriesWithStatusEndpoint = useCallback(async (statusFilter: string) => {
-    try {
-      setIsLoading(true)
-      setIsError(false)
-
-      const url = `/api/categories/status/${statusFilter}`
-      console.log('Fetching from status endpoint:', url)
-
-      const response = await fetch(url)
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.details || "Failed to fetch categories by status")
-      }
-
-      const data = await response.json()
-      setCategories(data)
-      setFilteredCategories(data)
-    } catch (error) {
-      console.error("Error fetching categories by status:", error)
-      setIsError(true)
-      toast({
-        title: "Error",
-        description: `Failed to load categories by status: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }, [toast])
 
   // Main fetch function - you can choose which method to use
   const fetchCategories = useCallback(async (categoryFilter?: string, statusFilter?: string) => {
     // Method 1: Using query parameters (recommended)
     await fetchCategoriesWithQueryParams(categoryFilter, statusFilter)
-
-    // Alternative - Method 2: Using dedicated endpoint for status only
-    // Uncomment the lines below and comment out the line above if you prefer this approach
-    /*
-    if (statusFilter && statusFilter !== "" && !categoryFilter) {
-      await fetchCategoriesWithStatusEndpoint(statusFilter)
-    } else {
-      await fetchCategoriesWithQueryParams(categoryFilter, statusFilter)
-    }
-    */
   }, [fetchCategoriesWithQueryParams])
 
   // Category filter
@@ -252,6 +215,7 @@ const CategoriesData = () => {
       image: null,
       imagePreview: "",
       status: "active",
+      isPublic: false,
     })
     setEditingId(null)
   }
@@ -269,6 +233,7 @@ const CategoriesData = () => {
       image: null,
       imagePreview: category.imageUrl || "",
       status: category.status || "active",
+      isPublic: category.isPublic || false,
     })
     setEditingId(category.id || null)
     setIsModalOpen(true)
@@ -385,6 +350,27 @@ const CategoriesData = () => {
             }`}
         >
           {params.value === "active" ? "Active" : "Inactive"}
+        </span>
+      ),
+      filter: false,
+      sortable: true,
+    },
+    {
+      headerName: "Is Public",
+      field: "isPublic",
+      flex: 1,
+      minWidth: 120,
+      maxWidth: 180,
+      cellStyle: centerStyle,
+      cellRenderer: (params: any) => (
+        <span
+          className={`px-2 py-1 text-xs rounded-full capitalize ${params.value === true
+            ? "bg-blue-100 text-blue-800"
+            : "bg-gray-100 text-gray-800"
+            }`}
+        >
+          {/* {params.value} */}
+          {params.value === true ? "True" : "False"}
         </span>
       ),
       filter: false,

@@ -13,7 +13,8 @@ interface Category {
     id?: string
     name: string
     imageUrl: string
-    status: "active" | "inactive" // Updated with status
+    status: "active" | "inactive"
+    isPublic: boolean
     createdAt?: string
     updatedAt?: string
 }
@@ -22,7 +23,8 @@ interface CategoryFormData {
     name: string
     image: File | null
     imagePreview: string
-    status: "active" | "inactive" // Updated with status
+    status: "active" | "inactive"
+    isPublic: boolean
 }
 
 interface FormErrors {
@@ -69,8 +71,11 @@ export default function CategoryModal({
     }, [isModalVisible])
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value } = e.target
-        setFormData((prev) => ({ ...prev, [name]: value }))
+        const { name, value, type } = e.target
+        setFormData((prev) => ({ 
+            ...prev, 
+            [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value 
+        }))
 
         if (errors[name as keyof FormErrors]) {
             setErrors((prev) => ({ ...prev, [name]: undefined }))
@@ -145,7 +150,8 @@ export default function CategoryModal({
 
         const formDataToSend = new FormData()
         formDataToSend.append("name", formData.name)
-        formDataToSend.append("status", formData.status) // Add status to form data
+        formDataToSend.append("status", formData.status)
+        formDataToSend.append("isPublic", formData.isPublic.toString())
 
         if (formData.image) {
             formDataToSend.append("image", formData.image)
@@ -280,7 +286,7 @@ export default function CategoryModal({
                     />
                 </div>
 
-                {/* New Status Field */}
+                {/* Status Field */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                         Status <span className="text-red-500">*</span>
@@ -306,6 +312,22 @@ export default function CategoryModal({
                     {errors.status && (
                         <p className="mt-1 text-sm text-red-600">{errors.status}</p>
                     )}
+                </div>
+
+                {/* Is Public Checkbox */}
+                <div className="flex items-center space-x-2">
+                    <input
+                        type="checkbox"
+                        id="isPublic"
+                        name="isPublic"
+                        checked={formData.isPublic}
+                        onChange={handleInputChange}
+                        disabled={isSubmitting}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="isPublic" className="text-sm font-medium text-gray-700">
+                        Is Public
+                    </label>
                 </div>
 
             </div>

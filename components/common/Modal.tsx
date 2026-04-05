@@ -17,7 +17,7 @@ interface ModalProps {
   confirmVariant?: string
   isConfirmDisabled?: boolean
   isLoading?: boolean
-  width?: string // ✅ new prop for dynamic width (e.g. "50rem", "600px", "80%")
+  width?: string
 }
 
 export default function Modal({
@@ -31,7 +31,7 @@ export default function Modal({
   confirmLabel = "Confirm",
   confirmVariant = "default",
   isLoading = false,
-  width = "35rem", // ✅ default width
+  width = "35rem",
 }: ModalProps) {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -39,7 +39,6 @@ export default function Modal({
         onClose()
       }
     }
-
     window.addEventListener("keydown", handleEscape)
     return () => window.removeEventListener("keydown", handleEscape)
   }, [isOpen, onClose])
@@ -62,34 +61,39 @@ export default function Modal({
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50" aria-hidden="true" />
 
-      {/* Modal Container */}
+      {/* Modal Container — max-h 90vh taaki screen ka zyada hissa use ho */}
       <div
-        className="relative bg-white rounded-2xl shadow-xl mx-4 max-h-[80vh] flex flex-col overflow-hidden z-10"
-        style={{ width }} // ✅ dynamic width
+        className="relative bg-white rounded-2xl shadow-xl mx-4 flex flex-col z-10"
+        style={{
+          width,
+          maxHeight: "90vh",        // ← 80vh se 90vh kiya
+          overflow: "hidden",       // ← container khud scroll nahi karega
+        }}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[#EADFC8]">
+        {/* Header — fixed rahega, scroll nahi hoga */}
+        <div className="flex items-center justify-between p-4 border-b border-[#EADFC8] shrink-0">
           <h3 className="text-lg font-semibold text-[#4B3F2F]">{title}</h3>
           <button
             onClick={onClose}
-            className={`${confirmVariant === "destructive" 
-              ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" 
-              : ""} transition-colors`}
-              // bg-primary text-primary-foreground hover:bg-primary/90
+            className={`${
+              confirmVariant === "destructive"
+                ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                : ""
+            } transition-colors`}
             aria-label="Close"
           >
             <X size={20} />
           </button>
         </div>
 
-        {/* Body */}
-        <div className="p-4 overflow-y-auto scrollbar-custom flex-1">
+        {/* Body — yahi sirf scroll karega, flex-1 + min-h-0 zaroori hai */}
+        <div className="p-4 overflow-y-auto flex-1 min-h-0 scrollbar-custom">
           {message && <p className="text-[#4B3F2F] mb-4">{message}</p>}
           {children}
         </div>
 
-        {/* Footer */}
-        <div className="flex justify-end gap-2 p-4 border-t border-[#EADFC8]">
+        {/* Footer — fixed rahega, scroll nahi hoga */}
+        <div className="flex justify-end gap-2 p-4 border-t border-[#EADFC8] shrink-0">
           <button
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-customButton-text bg-customButton hover:bg-[#FFD1D1] hover:text-[#800000] rounded-md transition-colors disabled:opacity-70 disabled:cursor-not-allowed"

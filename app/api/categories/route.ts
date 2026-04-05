@@ -51,9 +51,10 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const name = formData.get('name') as string;
     const status = (formData.get('status') as string) || 'active';
+    const isPublic = formData.get('isPublic') === 'true';
     const imageFile = formData.get('image') as File | null;
 
-    console.log('POST - Creating category:', { name, status });
+    console.log('POST - Creating category:', { name, status, isPublic });
 
     if (!name || !imageFile) {
       return NextResponse.json(
@@ -72,7 +73,8 @@ export async function POST(request: Request) {
     const categoryId = await addCategory({ 
       name, 
       imageUrl: '', 
-      status: status as 'active' | 'inactive' 
+      status: status as 'active' | 'inactive',
+      isPublic 
     }, imageFile);
     
     return NextResponse.json(

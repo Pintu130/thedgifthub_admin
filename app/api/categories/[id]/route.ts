@@ -12,9 +12,10 @@ export async function PUT(
     
     const name = formData.get('name') as string;
     const status = (formData.get('status') as string) || 'active';
+    const isPublic = formData.get('isPublic') === 'true';
     const imageFile = formData.get('image') as File | null;
 
-    console.log('PUT - Updating category:', { id, name, status });
+    console.log('PUT - Updating category:', { id, name, status, isPublic });
 
     if (!name) {
       return NextResponse.json(
@@ -38,7 +39,8 @@ export async function PUT(
       id, 
       { 
         name, 
-        status: status as 'active' | 'inactive' 
+        status: status as 'active' | 'inactive',
+        isPublic 
       }, 
       imageFile || undefined, 
       oldImageUrl

@@ -7,6 +7,7 @@ export interface Category {
   name: string;
   imageUrl: string;
   status: "active" | "inactive";
+  isPublic: boolean;
   createdAt?: any;
   updatedAt?: any;
 }
@@ -43,6 +44,7 @@ export const getAllCategories = async (): Promise<Category[]> => {
         name: data.name,
         imageUrl: data.imageUrl,
         status: data.status || 'active',
+        isPublic: data.isPublic || false,
         ...convertTimestamps(data)
       } as Category;
     });
@@ -66,6 +68,7 @@ export const getCategoriesByStatus = async (status: string): Promise<Category[]>
         name: data.name,
         imageUrl: data.imageUrl,
         status: data.status || 'active',
+        isPublic: data.isPublic || false,
         ...convertTimestamps(data)
       } as Category;
     });
@@ -109,6 +112,7 @@ export const getCategoriesByCategory = async (categoryId: string): Promise<Categ
         name: data.name,
         imageUrl: data.imageUrl,
         status: data.status || 'active',
+        isPublic: data.isPublic || false,
         ...convertTimestamps(data)
       } as Category];
     } else {
@@ -129,11 +133,12 @@ export const addCategory = async (category: Omit<Category, 'id' | 'createdAt' | 
 
     console.log('Adding category with data:', { ...category, imageUrl }); // Debug log
 
-    // Add category to Firestore with status
+    // Add category to Firestore with status and isPublic
     const docRef = await addDoc(categoriesRef, {
       name: category.name,
       imageUrl,
       status: category.status || 'active',
+      isPublic: category.isPublic || false,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
@@ -155,6 +160,7 @@ export const updateCategory = async (id: string, category: Partial<Category>, im
     // Add fields that are being updated
     if (category.name) updateData.name = category.name;
     if (category.status) updateData.status = category.status;
+    if (category.isPublic !== undefined) updateData.isPublic = category.isPublic;
 
     console.log('Updating category with data:', updateData); // Debug log
 

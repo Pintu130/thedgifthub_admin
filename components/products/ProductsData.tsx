@@ -10,7 +10,8 @@ import Loader from "@/components/loading-screen"
 import { Eye, Pencil, Plus, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Modal from "@/components/common/Modal"
-import TableModalProductData from "@/app/products/TableModalProductData"
+import ProductDetailsModal from "./ProductDetailsModal"
+import { useRouter } from "next/navigation"
 import type { ColDef } from "ag-grid-community"
 import type { Product } from "@/lib/types/product"
 import {
@@ -41,27 +42,11 @@ export interface ProductFormData {
 
 const ProductData = () => {
   const { toast } = useToast()
+  const router = useRouter()
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isError, setIsError] = useState(false)
   const [searchText, setSearchText] = useState("")
-  const [isModalVisible, setIsModalVisible] = useState(false)
-  const [formData, setFormData] = useState<ProductFormData>({
-    id: "",
-    name: "",
-    categoryId: "",
-    amount: "",
-    discount: "",
-    originalPrice: "",
-    availableOffers: "",
-    highlights: "",
-    description: "",
-    status: "inactive",
-    images: [],
-    imagesPreviews: [],
-    productPrice: 0,
-    discountPercentage: 0,
-  })
 
   const [categories, setCategories] = useState<Array<{ id: string, name: string }>>([])
 
@@ -75,7 +60,7 @@ const ProductData = () => {
   const [selectedStatus, setSelectedStatus] = useState<string>("") // New state for status filter
 
   const gridRef = useRef<AgGridReact | null>(null)
-  const [paginationPageSize] = useState(5)
+  const [paginationPageSize] = useState(20)
   const [gridApi, setGridApi] = useState<any>(null)
 
   // ✅ Fetch products with category and status filters
@@ -119,45 +104,19 @@ const ProductData = () => {
     setGridApi(params.api)
   }
 
-  // ✅ Modal toggle
-  const toggleModal = useCallback(() => {
-    setFormData({
-      name: "",
-      categoryId: '',
-      amount: "",
-      discount: "",
-      availableOffers: "",
-      highlights: "",
-      description: "",
-      status: "inactive",
-      images: [],
-      imagesPreviews: [],
-      productPrice: 0,
-      originalPrice: "",
-      discountPercentage: 0,
-    })
-    setIsModalVisible(!isModalVisible)
-  }, [isModalVisible])
+  // ✅ Add Product
+  const handleAddProduct = useCallback(() => {
+    router.push('/products/add')
+  }, [router])
 
   // ✅ Edit
   const handleEdit = useCallback((product: Product) => {
-    setFormData({
-      id: product.id,
-      categoryId: product.categoryId || '',
-      name: product.productName || "",
-      amount: product.productPrice?.toString() || "0",
-      discount: product.discountPercentage?.toString() || "0",
-      availableOffers: product.availableOffers || "",
-      highlights: product.highlights || "",
-      description: product.description || "",
-      status: product.status || "inactive",
-      images: product.images || [],
-      imagesPreviews: Array.isArray(product.images) ? product.images : [],
-      productPrice: product.productPrice || 0,
-      originalPrice: product.originalPrice?.toString() || "0",
-      discountPercentage: product.discountPercentage || 0,
-    })
-    setIsModalVisible(true)
+    router.push(`/products/edit/${product.id}`)
+  }, [router])
+
+  const handleView = useCallback((product: Product) => {
+    setViewProduct(product)
+    setIsViewModalOpen(true)
   }, [])
 
   const handleDelete = useCallback((product: Product) => {
@@ -168,11 +127,6 @@ const ProductData = () => {
   const closeDeleteModal = useCallback(() => {
     setIsDeleteModalOpen(false)
     setProductToDelete(null)
-  }, [])
-
-  const handleView = useCallback((product: Product) => {
-    setViewProduct(product)
-    setIsViewModalOpen(true)
   }, [])
 
   const closeViewModal = useCallback(() => {
@@ -269,10 +223,10 @@ const ProductData = () => {
     {
       headerName: "Name",
       field: "productName",
-      flex: 1.5,
+      flex: 2,
       sortable: true,
-      minWidth: 200,
-      maxWidth: 300,
+      minWidth: 250,
+      maxWidth: 400,
       cellRenderer: (params: any) => (
         <span className="text-sm font-medium text-gray-900">
           {params.value || "No Name"}
@@ -298,6 +252,24 @@ const ProductData = () => {
       ),
     },
     {
+      headerName: "Out of Stock",
+      field: "outOfStock",
+      flex: 1,
+      sortable: true,
+      minWidth: 140,
+      maxWidth: 180,
+      cellRenderer: (params: any) => (
+        <span
+          className={`px-2 py-1 text-xs rounded-full ${params.value === "yes"
+            ? "bg-red-100 text-red-800"
+            : "bg-green-100 text-green-800"
+            }`}
+        >
+          {params.value === "yes" ? "Yes" : "No"}
+        </span>
+      ),
+    },
+    {
       headerName: "Original Price ($)",
       field: "originalPrice",
       flex: 1.5,
@@ -307,7 +279,7 @@ const ProductData = () => {
       cellRenderer: (params: any) => (
         <div className="flex items-center justify-center h-full w-full">
           <p className="text-sm text-gray-900">
-            ${(params.value || 0).toFixed(2)}
+            ₹{(params.value || 0).toFixed(2)}
           </p>
         </div>
       ),
@@ -322,7 +294,7 @@ const ProductData = () => {
       cellRenderer: (params: any) => (
         <div className="flex items-center justify-center h-full w-full">
           <p className="text-sm text-gray-900">
-            ${(params.value || 0).toFixed(2)}
+            ₹{(params.value || 0).toFixed(2)}
           </p>
         </div>
       ),
@@ -441,7 +413,7 @@ const ProductData = () => {
               disabled={isLoading}
             />
             <button
-              onClick={toggleModal}
+              onClick={handleAddProduct}
               className="px-4 py-2 rounded-md bg-gradient-to-r 
                                        from-customButton-gradientFrom
                                        to-customButton-gradientTo
@@ -465,13 +437,12 @@ const ProductData = () => {
           )}
           {isError && <p className="p-4 bg-red-50 text-red-700 rounded-md">Failed to load products.</p>}
           {!isLoading && !isError && (
-            <div className="ag-theme-alpine w-full">
+            <div className="ag-theme-alpine" style={{ height: "calc(100vh - 380px)", width: "100%", minHeight: "400px" }}>
               <AgGridReact
                 ref={gridRef}
                 rowData={products}
                 columnDefs={columnDefs}
                 defaultColDef={{
-                  flex: 1,
                   resizable: true,
                   sortable: true,
                   cellClass: "text-center text-[#2D3748] bg-white",
@@ -479,7 +450,6 @@ const ProductData = () => {
                 }}
                 pagination={true}
                 paginationPageSize={paginationPageSize}
-                domLayout="autoHeight"
                 suppressCellSelection={true}
                 onGridReady={onGridReady}
                 rowHeight={50}
@@ -488,19 +458,6 @@ const ProductData = () => {
           )}
         </CardContent>
       </Card>
-
-      {/* Product Form Modal */}
-      <TableModalProductData
-        isModalVisible={isModalVisible}
-        onClose={toggleModal}
-        title={formData.id ? "Edit Product" : "Add Product"}
-        closeLabel="Cancel"
-        saveLabel={formData.id ? "Update" : "Save"}
-        formData={formData}
-        setFormData={setFormData} // ✅ now type matches
-        getTotalProducts={refreshGridData}
-        categories={categories} // Passing the categories from state
-      />
 
       {/* Delete Confirmation Modal */}
       <Modal
@@ -514,102 +471,12 @@ const ProductData = () => {
         isLoading={isDeleting}
       />
 
-      <Modal
+      <ProductDetailsModal
         isOpen={isViewModalOpen}
         onClose={closeViewModal}
-        title="Product Details"
-        width="50rem" // ✅ wider modal for details
-        closeLabel="Close"
-      >
-        {viewProduct && (
-          <div className="space-y-6 text-[#4B3F2F]">
-            {/* Images Gallery */}
-            {Array.isArray(viewProduct.images) && viewProduct.images.length > 0 ? (
-              <div className="flex flex-wrap gap-3 justify-center">
-                {viewProduct.images.map((img, idx) => (
-                  <img
-                    key={idx}
-                    src={img || "/placeholder.svg?height=150&width=150"}
-                    alt={`${viewProduct.productName} - ${idx + 1}`}
-                    className="w-28 h-28 object-cover rounded-lg border shadow-sm hover:scale-105 transition"
-                    onError={(e: any) => (e.currentTarget.src = "/placeholder.svg?height=150&width=150")}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="flex justify-center">
-                <img
-                  src="/placeholder.svg?height=150&width=150"
-                  alt="No product"
-                  className="w-40 h-40 object-cover rounded-lg border shadow-sm"
-                />
-              </div>
-            )}
-
-            {/* Product Info */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-[#fff5f5] p-4 rounded-xl shadow-inner">
-              <p>
-                <span className="font-semibold text-[#A30000]">Name:</span> {viewProduct.productName}
-              </p>
-              <p>
-                <span className="font-semibold text-[#A30000]">Status:</span>{" "}
-                <span
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${viewProduct.status === "active" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                    }`}
-                >
-                  {viewProduct.status === "active" ? "Active" : "Inactive"}
-                </span>
-              </p>
-              <p>
-                <span className="font-semibold text-[#A30000]">Original Price:</span> $
-                {viewProduct.originalPrice?.toFixed(2)}
-              </p>
-              <p>
-                <span className="font-semibold text-[#A30000]">Price:</span> ${viewProduct.productPrice?.toFixed(2)}
-              </p>
-              <p>
-                <span className="font-semibold text-[#A30000]">Discount:</span>{" "}
-                <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">
-                  {viewProduct.discountPercentage || 0}%
-                </span>
-              </p>
-              <p>
-                <span className="font-semibold text-[#A30000]">Category Name:</span>{" "}
-                {categories.find((cat) => cat.id === viewProduct.categoryId)?.name || "N/A"}
-              </p>
-            </div>
-
-            {viewProduct.description && (
-              <div className="bg-[#fff5f5] p-4 rounded-xl shadow-sm">
-                <h4 className="font-semibold text-[#A30000] mb-2">Description</h4>
-                <p className="text-gray-800 whitespace-pre-wrap">{viewProduct.description}</p>
-              </div>
-            )}
-
-            {/* Offers */}
-            {viewProduct.availableOffers && (
-              <div className="bg-[#fff5f5] p-4 rounded-xl shadow-sm">
-                <h4 className="font-semibold text-[#A30000] mb-2">Available Offers</h4>
-                <div
-                  className="prose prose-sm max-w-none text-gray-800"
-                  dangerouslySetInnerHTML={{ __html: viewProduct.availableOffers }}
-                />
-              </div>
-            )}
-
-            {/* Highlights */}
-            {viewProduct.highlights && (
-              <div className="bg-[#fff5f5] p-4 rounded-xl shadow-sm">
-                <h4 className="font-semibold text-[#A30000] mb-2">Highlights</h4>
-                <div
-                  className="prose prose-sm max-w-none text-gray-800"
-                  dangerouslySetInnerHTML={{ __html: viewProduct.highlights }}
-                />
-              </div>
-            )}
-          </div>
-        )}
-      </Modal>
+        product={viewProduct}
+        categories={categories}
+      />
     </div>
   )
 }

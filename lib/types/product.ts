@@ -10,15 +10,48 @@ export interface Product {
   highlights: string
   description: string
   status: "active" | "inactive"
+  outOfStock: string
   activity: number
   createdAt: string
   updatedAt: string
+  slug: string
+  // Shipping details
+  length?: number
+  breadth?: number
+  height?: number
+  weight?: number
+  // SEO details
+  metaTitle?: string
+  metaKeywords?: string
+  metaDescription?: string
 }
 
-export interface ProductFormData
-  extends Omit<Product, "id" | "createdAt" | "updatedAt" | "images"> {
+export interface ProductFormData {
   id?: string
-  images: File[] | string[]
+  name: string
+  amount: string
+  discount: string
+  originalPrice: string
+  availableOffers: string
+  highlights: string
+  description: string
+  status: "active" | "inactive"
+  outOfStock: string
+  images: Array<File | string>
+  imagesPreviews: string[]
+  productPrice: number
+  discountPercentage: number
+  slug: string
+  categoryId?: string
+  // Shipping details
+  length?: string
+  breadth?: string
+  height?: string
+  weight?: string
+  // SEO details
+  metaTitle?: string
+  metaKeywords?: string
+  metaDescription?: string
 }
 
 export interface PaginationParams {

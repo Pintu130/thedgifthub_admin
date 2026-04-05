@@ -32,12 +32,23 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       productPrice: Number.parseFloat(formData.get("productPrice") as string) || 0,
       originalPrice: Number.parseFloat(formData.get("originalPrice") as string) || 0,
       discountPercentage: Number.parseFloat(formData.get("discountPercentage") as string) || 0,
-      categoryId: formData.get("categoryId") as string, // ✅ Added categoryId
+      categoryId: formData.get("categoryId") as string, // 
       availableOffers: (formData.get("availableOffers") as string) || "",
       highlights: (formData.get("highlights") as string) || "",
       description: (formData.get("description") as string) || "",
       status: (formData.get("status") as string) || "inactive",
+      outOfStock: (formData.get("outOfStock") as string) || "no", // Added outOfStock field
+      slug: (formData.get("slug") as string) || "", // Added slug field
       activity: 1,
+      // Shipping details
+      length: Number.parseFloat(formData.get("length") as string) || 0,
+      breadth: Number.parseFloat(formData.get("breadth") as string) || 0,
+      height: Number.parseFloat(formData.get("height") as string) || 0,
+      weight: Number.parseFloat(formData.get("weight") as string) || 0,
+      // SEO details
+      metaTitle: (formData.get("metaTitle") as string) || "",
+      metaKeywords: (formData.get("metaKeywords") as string) || "",
+      metaDescription: (formData.get("metaDescription") as string) || "",
     }
 
     // Handle images
