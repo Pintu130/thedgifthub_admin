@@ -347,7 +347,14 @@ const OffersData = () => {
       headerName: "Offer",
       field: "discountLabel",
       minWidth: 150,
-      valueFormatter: (params: any) => `${params.value} ${params.data.value}%`
+      valueFormatter: (params: any) => {
+        const discountType = params.data?.discountType
+        if (discountType === 'percentage') {
+          return `${params.data.discountLabel} ${params.data.value}%`
+        } else {
+          return `${params.data.priceLabel} ${params.data.value}₹`
+        }
+      }
     },
     {
       headerName: "Category",
@@ -557,6 +564,8 @@ const OffersData = () => {
               status: offerData.status,
               availableOffers: offerData.availableOffers || '',
               highlights: offerData.highlights || '',
+              // Include existing images for update
+              ...(isEdit && { images: offerData.images.filter(img => typeof img === 'string') })
             }
 
             fd.append('offerData', JSON.stringify(payload))

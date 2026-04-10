@@ -25,6 +25,7 @@ import {
   ShoppingCart,
   Truck,
   FileText,
+  Cog,
 } from "lucide-react"
 import { MdCategory } from "react-icons/md"
 import Image from "next/image"
@@ -46,6 +47,7 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
 
   // State for dropdown menus
   const [homeDropdownOpen, setHomeDropdownOpen] = useState(false)
+  const [systemDropdownOpen, setSystemDropdownOpen] = useState(false)
   const [pagesDropdownOpen, setPagesDropdownOpen] = useState(false)
   const [registrationDropdownOpen, setRegistrationDropdownOpen] = useState(false)
   const [paymentsDropdownOpen, setPaymentsDropdownOpen] = useState(false)
@@ -60,15 +62,15 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
     },
   ]
 
-  // Home dropdown pages
-  // const homeDropdownPages: RouteConfig[] = [
-  //   {
-  //     label: "Home",
-  //     icon: Home,
-  //     href: "/home",
-  //     active: pathname === "/home",
-  //   },
-  // ]
+  // System dropdown pages
+  const systemDropdownPages: RouteConfig[] = [
+    {
+      label: "Home",
+      icon: Home,
+      href: "/home",
+      active: pathname === "/home",
+    },
+  ]
 
   // Pages dropdown
   // const pagesDropdownPages: RouteConfig[] = [
@@ -187,18 +189,20 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
   // ]
 
   // Check if any dropdown pages are active
+  const isAnySystemPageActive = systemDropdownPages.some((page) => page.active)
   // const isAnyHomePageActive = homeDropdownPages.some((page) => page.active)
   // const isAnyPagesPageActive = pagesDropdownPages.some((page) => page.active)
   // const isAnyPaymentsPageActive = paymentsDropdownPages.some((page) => page.active)
   // const isAnyRegistrationPageActive = registrationDropdownPages.some((page) => page.active)
 
   // Auto-open dropdowns when nested pages are active
-  // useEffect(() => {
-  //   // if (isAnyHomePageActive) setHomeDropdownOpen(true)
-  //   // if (isAnyPagesPageActive) setPagesDropdownOpen(true)
-  //   // if (isAnyPaymentsPageActive) setPaymentsDropdownOpen(true)
-  //   // if (isAnyRegistrationPageActive) setRegistrationDropdownOpen(true)
-  // }, [])
+  useEffect(() => {
+    if (isAnySystemPageActive) setSystemDropdownOpen(true)
+    // if (isAnyHomePageActive) setHomeDropdownOpen(true)
+    // if (isAnyPagesPageActive) setPagesDropdownOpen(true)
+    // if (isAnyPaymentsPageActive) setPaymentsDropdownOpen(true)
+    // if (isAnyRegistrationPageActive) setRegistrationDropdownOpen(true)
+  }, [])
 
   const renderDropdownButton = (
     label: string,
@@ -285,23 +289,27 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
           {/* 1. Dashboard */}
           {renderRoutes(mainRoutes)}
 
-          {/* 2. Home Dropdown */}
+          {/* 2. System Dropdown */}
+          {renderDropdownButton("System", Cog, systemDropdownOpen, setSystemDropdownOpen, isAnySystemPageActive, systemDropdownPages.length > 0)}
+          {systemDropdownOpen && renderDropdownChildren(systemDropdownPages)}
+
+          {/* 3. Home Dropdown */}
           {/* {renderDropdownButton("Home", Home, homeDropdownOpen, setHomeDropdownOpen, isAnyHomePageActive, homeDropdownPages.length > 0)} */}
           {/* {homeDropdownOpen && renderDropdownChildren(homeDropdownPages)} */}
 
-          {/* 3. Pages Dropdown */}
+          {/* 4. Pages Dropdown */}
           {/* {renderDropdownButton("Pages", Folder, pagesDropdownOpen, setPagesDropdownOpen, isAnyPagesPageActive, pagesDropdownPages.length > 0)} */}
           {/* {pagesDropdownOpen && renderDropdownChildren(pagesDropdownPages)} */}
 
-          {/* 4. Payments Dropdown */}
+          {/* 5. Payments Dropdown */}
           {/* {renderDropdownButton("Payments", CreditCard, paymentsDropdownOpen, setPaymentsDropdownOpen, isAnyPaymentsPageActive, paymentsDropdownPages.length > 0)} */}
           {/* {paymentsDropdownOpen && renderDropdownChildren(paymentsDropdownPages)} */}
 
-          {/* 5. Registration Dropdown */}
+          {/* 6. Registration Dropdown */}
           {/* {renderDropdownButton("Registration", UserPlus, registrationDropdownOpen, setRegistrationDropdownOpen, isAnyRegistrationPageActive, registrationDropdownPages.length > 0)} */}
           {/* {registrationDropdownOpen && renderDropdownChildren(registrationDropdownPages)} */}
 
-          {/* 6. Bottom Routes */}
+          {/* 7. Bottom Routes */}
           {renderRoutes(bottomRoutes)}
 
           {/* Separator */}

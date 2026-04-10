@@ -3,11 +3,8 @@
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
 // import Modal from "@/components/common/Modal"
-import FormInput from "@/components/common/FormInput"
-import Loader from "@/components/loading-screen"
 import { useToast } from "@/hooks/use-toast"
 import { X, Plus } from "lucide-react"
-import AdvancedCKEditor from "@/components/common/advanced-ckeditor"
 import Modal from "@/components/common/Modal"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
@@ -23,6 +20,7 @@ export interface OfferFormData {
   status: 'active' | 'inactive'
   availableOffers?: string
   highlights?: string
+  imagesToDelete?: string[] // Track images to delete from storage
 }
 
 
@@ -111,6 +109,7 @@ export default function TableModalOfferData({
           ...prev,
           images: [],
           imagesPreviews: [],
+          imagesToDelete: [], // Initialize imagesToDelete for editing
           discountType: prev.discountType || 'percentage',
           discountLabel: prev.discountLabel || '',
           priceLabel: prev.priceLabel || '',
@@ -222,6 +221,13 @@ export default function TableModalOfferData({
       // Create new arrays without the item at the specified index
       const newImages = [...(Array.isArray(prev.images) ? prev.images : [])]
       const newPreviews = [...(Array.isArray(prev.imagesPreviews) ? prev.imagesPreviews : [])]
+      const imagesToDelete = [...(prev.imagesToDelete || [])]
+
+      // If the image being removed is a string (existing image), add it to deletion list
+      const imageToRemove = newImages[index]
+      if (typeof imageToRemove === 'string' && imageToRemove.startsWith('http')) {
+        imagesToDelete.push(imageToRemove)
+      }
 
       // Revoke the object URL if it's a blob URL
       if (newPreviews[index]?.startsWith("blob:")) {
@@ -236,6 +242,7 @@ export default function TableModalOfferData({
         ...prev,
         images: newImages,
         imagesPreviews: newPreviews,
+        imagesToDelete: imagesToDelete
       }
     })
   }

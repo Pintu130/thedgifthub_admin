@@ -244,19 +244,25 @@ const updateOffer = async (
       updatedAt: serverTimestamp(),
     }
     
+    // Start with existing images from offerData (these are the current images in the form)
+    let currentImages = offerData.images || []
+    
     // Upload new images if any
     if (newImages.length > 0) {
       const newImageUrls = await uploadImages(newImages)
-      updateData.images = [...(offerData.images || []), ...newImageUrls]
+      currentImages = [...currentImages, ...newImageUrls]
     }
     
-    // Delete specified images
+    // Delete specified images from current images
     if (imagesToDelete.length > 0) {
       await deleteImages(imagesToDelete)
-      updateData.images = (offerData.images || []).filter(
+      currentImages = currentImages.filter(
         (url) => !imagesToDelete.includes(url)
       )
     }
+    
+    // Update with final images array
+    updateData.images = currentImages
     
     await updateDoc(offerRef, updateData)
   } catch (error) {
