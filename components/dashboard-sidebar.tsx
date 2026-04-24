@@ -26,6 +26,7 @@ import {
   Truck,
   FileText,
   Cog,
+  Star,
 } from "lucide-react"
 import { MdCategory } from "react-icons/md"
 import Image from "next/image"
@@ -141,6 +142,12 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
       active: pathname === "/products",
     },
     {
+      label: "Product Reviews",
+      icon: Star,
+      href: "/product-reviews",
+      active: pathname === "/product-reviews",
+    },
+    {
       label: "Offers",
       icon: BadgePercent,
       href: "/offers",
@@ -164,6 +171,7 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
       href: "/product-print",
       active: pathname === "/product-print",
     },
+ 
     // {
     //   label: "Order Shipping", // Page title
     //   icon: Truck,             // Icon representing shipping
