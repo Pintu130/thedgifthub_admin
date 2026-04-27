@@ -1,7 +1,9 @@
 "use client"
 
-import { X, User, MapPin, Mail, Phone, MessageSquare, Calendar, Clock } from "lucide-react"
+import { useState } from "react"
+import { X, User, MapPin, Mail, Phone, MessageSquare, Calendar, Clock, Copy, Check } from "lucide-react"
 import { Timestamp } from "firebase/firestore"
+import { useToast } from "@/hooks/use-toast"
 
 interface Enquiry {
   id: string
@@ -21,7 +23,36 @@ interface ViewEnquiryModalProps {
 }
 
 export default function ViewEnquiryModal({ enquiry, onClose }: ViewEnquiryModalProps) {
+  const { toast } = useToast()
+  const [copiedField, setCopiedField] = useState<string | null>(null)
+
   if (!enquiry) return null
+
+  const copyToClipboard = async (text: string, field: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedField(field)
+      toast({
+        title: "Copied!",
+        description: `${field} copied to clipboard`,
+      })
+      setTimeout(() => setCopiedField(null), 2000)
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Failed to copy",
+        description: "Could not copy to clipboard",
+      })
+    }
+  }
+
+  const copyAllContactInfo = async () => {
+    const contactInfo = `Name: ${enquiry.fullName}
+Email: ${enquiry.email}
+Phone: ${enquiry.phone}
+City: ${enquiry.city}`
+    await copyToClipboard(contactInfo, "All Contact Info")
+  }
 
   const formatDate = (timestamp: Timestamp | null) => {
     if (!timestamp) return "-"
@@ -58,34 +89,80 @@ export default function ViewEnquiryModal({ enquiry, onClose }: ViewEnquiryModalP
         <div className="p-6 overflow-y-auto flex-1 min-h-0">
           {/* User Info */}
           <div className="mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <User size={18} className="text-customButton-text" />
-              <h4 className="font-semibold text-gray-800">Contact Information</h4>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <User size={18} className="text-customButton-text" />
+                <h4 className="font-semibold text-gray-800">Contact Information</h4>
+              </div>
+              <button
+                onClick={copyAllContactInfo}
+                className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-customButton-text bg-customButton hover:bg-[#FFD1D1] hover:text-[#800000] rounded-md transition-colors"
+                title="Copy all contact info"
+              >
+                <Copy size={14} />
+                Copy All
+              </button>
             </div>
             <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-500 flex items-center gap-1">
                   <User size={14} /> Full Name:
                 </span>
-                <span className="text-sm font-medium text-gray-800">{enquiry.fullName}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-800">{enquiry.fullName}</span>
+                  <button
+                    onClick={() => copyToClipboard(enquiry.fullName, "Full Name")}
+                    className="p-1 rounded hover:bg-gray-200 transition-colors"
+                    title="Copy Full Name"
+                  >
+                    {copiedField === "Full Name" ? <Check size={14} className="text-green-600" /> : <Copy size={14} className="text-gray-500" />}
+                  </button>
+                </div>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-500 flex items-center gap-1">
                   <Mail size={14} /> Email:
                 </span>
-                <span className="text-sm font-medium text-gray-800">{enquiry.email}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-800">{enquiry.email}</span>
+                  <button
+                    onClick={() => copyToClipboard(enquiry.email, "Email")}
+                    className="p-1 rounded hover:bg-gray-200 transition-colors"
+                    title="Copy Email"
+                  >
+                    {copiedField === "Email" ? <Check size={14} className="text-green-600" /> : <Copy size={14} className="text-gray-500" />}
+                  </button>
+                </div>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-500 flex items-center gap-1">
                   <Phone size={14} /> Phone:
                 </span>
-                <span className="text-sm font-medium text-gray-800">{enquiry.phone}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-800">{enquiry.phone}</span>
+                  <button
+                    onClick={() => copyToClipboard(enquiry.phone, "Phone")}
+                    className="p-1 rounded hover:bg-gray-200 transition-colors"
+                    title="Copy Phone"
+                  >
+                    {copiedField === "Phone" ? <Check size={14} className="text-green-600" /> : <Copy size={14} className="text-gray-500" />}
+                  </button>
+                </div>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-500 flex items-center gap-1">
                   <MapPin size={14} /> City:
                 </span>
-                <span className="text-sm font-medium text-gray-800">{enquiry.city}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-800">{enquiry.city}</span>
+                  <button
+                    onClick={() => copyToClipboard(enquiry.city, "City")}
+                    className="p-1 rounded hover:bg-gray-200 transition-colors"
+                    title="Copy City"
+                  >
+                    {copiedField === "City" ? <Check size={14} className="text-green-600" /> : <Copy size={14} className="text-gray-500" />}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

@@ -199,13 +199,13 @@ const EnquiryData = () => {
       width: 100,
       cellRenderer: (params: any) => (
         <div className="h-full flex items-center justify-center gap-2">
-          {/* <button
+          <button
             onClick={() => handleView(params.data)}
             className="p-1 rounded-full bg-green-50 text-green-600 hover:bg-green-100 transition"
             title="View"
           >
             <Eye size={16} />
-          </button> */}
+          </button>
           <button
             onClick={() => handleDelete(params.data)}
             className="p-1 rounded-full bg-red-50 text-red-600 hover:bg-red-100 transition"
