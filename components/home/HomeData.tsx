@@ -190,18 +190,21 @@ const HomeData = () => {
       field: "title",
       minWidth: 200,
       sortable: true,
+      tooltipField: "title",
     },
     {
       headerName: "Subtitle",
       field: "subtitle",
       minWidth: 250,
       sortable: true,
+      tooltipField: "subtitle",
     },
     {
       headerName: "Link",
       field: "link",
       minWidth: 150,
       sortable: true,
+      tooltipField: "link",
     },
     {
       headerName: "Status",

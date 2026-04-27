@@ -27,6 +27,7 @@ import {
   FileText,
   Cog,
   Star,
+  MessageSquare,
 } from "lucide-react"
 import { MdCategory } from "react-icons/md"
 import Image from "next/image"
@@ -146,6 +147,12 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
       icon: Star,
       href: "/product-reviews",
       active: pathname === "/product-reviews",
+    },
+    {
+      label: "Enquiry",
+      icon: MessageSquare,
+      href: "/enquiry",
+      active: pathname === "/enquiry",
     },
     {
       label: "Offers",
