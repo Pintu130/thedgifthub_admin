@@ -88,16 +88,17 @@ export const createProduct = async (productData: any): Promise<string> => {
       productPrice: productData.productPrice,
       originalPrice: productData.originalPrice,
       discountPercentage: productData.discountPercentage,
-      categoryId: productData.categoryId, // ✅ Include categoryId
+      categoryId: productData.categoryId, // 
       images: imageUrls,
       availableOffers: productData.availableOffers,
       highlights: productData.highlights,
       description: productData.description,
       status: productData.status,
-      outOfStock: productData.outOfStock || "no", // ✅ Include outOfStock
-      isBestSell: productData.isBestSell || "no", // ✅ Include isBestSell
-      isCorporateGifts: productData.isCorporateGifts || "no", // ✅ Include isCorporateGifts
-      slug: productData.slug || "", // ✅ Include slug
+      outOfStock: productData.outOfStock || "no", // 
+      isBestSell: productData.isBestSell || "no", // 
+      isCorporateGifts: productData.isCorporateGifts || "no", // 
+      ProductCustomise: productData.ProductCustomise || "no", // 
+      slug: productData.slug || "", // 
       activity: productData.activity || 1,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -122,7 +123,7 @@ export const createProduct = async (productData: any): Promise<string> => {
   }
 }
 
-// ✅ Updated getProducts function with status filter
+// Get products
 export const getProducts = async (
   params: PaginationParams & { categoryId?: string; status?: string } = { page: 1, limit: 10 }
 ) => {
@@ -134,28 +135,28 @@ export const getProducts = async (
       sortBy = "createdAt",
       sortOrder = "desc",
       categoryId = "",
-      status = "", // ✅ New status parameter
+      status = "", // 
     } = params
 
     const constraints: QueryConstraint[] = []
 
-    // ✅ Apply category filter
+    // Apply category filter
     if (categoryId) {
       constraints.push(where("categoryId", "==", categoryId))
     }
 
-    // ✅ Apply status filter - NEW
+    // Apply status filter - NEW
     if (status) {
       constraints.push(where("status", "==", status))
     }
 
-    // ✅ Add search
+    // Add search
     if (search) {
       constraints.push(where("productName", ">=", search))
       constraints.push(where("productName", "<=", search + "\uf8ff"))
     }
 
-    // ✅ Order by - handle multiple where clauses properly
+    // Order by - handle multiple where clauses properly
     if (categoryId && status) {
       // If both filters are applied, order by categoryId first, then status, then sortBy
       constraints.push(orderBy("categoryId"))
@@ -177,7 +178,7 @@ export const getProducts = async (
     // Base query
     let q = query(collection(db, COLLECTION_NAME), ...constraints)
 
-    // ✅ Pagination
+    // Pagination
     if (page > 1) {
       const offset = (page - 1) * pageLimit
       const offsetQuery = query(collection(db, COLLECTION_NAME), ...constraints, limit(offset))
@@ -206,7 +207,7 @@ export const getProducts = async (
       } as Product)
     })
 
-    // ✅ Total count (without pagination limit)
+    // Total count (without pagination limit)
     const totalQuery = query(collection(db, COLLECTION_NAME), ...constraints)
     const totalSnapshot = await getDocs(totalQuery)
     const total = totalSnapshot.size
@@ -286,6 +287,7 @@ export const updateProduct = async (id: string, productData: any): Promise<void>
       outOfStock: productData.outOfStock || "no", // 
       isBestSell: productData.isBestSell || "no", // 
       isCorporateGifts: productData.isCorporateGifts || "no", // 
+      ProductCustomise: productData.ProductCustomise || "no", // 
       slug: productData.slug || "", // 
       activity: productData.activity || 1,
       images: imageUrls,

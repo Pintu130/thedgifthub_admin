@@ -31,6 +31,7 @@ interface FormErrors {
   outOfStock?: string
   isBestSell?: string
   isCorporateGifts?: string
+  ProductCustomise?: string
   // Shipping errors
   length?: string
   breadth?: string
@@ -78,6 +79,7 @@ export default function ProductForm({
     outOfStock: "no", // Add outOfStock field with default value
     isBestSell: "no", // Add isBestSell field with default value
     isCorporateGifts: "no", // Add isCorporateGifts field with default value
+    ProductCustomise: "no", // Add ProductCustomise field with default value
     images: [],
     imagesPreviews: [],
     productPrice: 0,
@@ -150,6 +152,7 @@ export default function ProductForm({
             outOfStock: product.outOfStock || "no", // Add outOfStock for edit mode
             isBestSell: product.isBestSell || "no", // Add isBestSell for edit mode
             isCorporateGifts: product.isCorporateGifts || "no", // Add isCorporateGifts for edit mode
+            ProductCustomise: product.ProductCustomise || "no", // Add ProductCustomise for edit mode
             images: product.images || [],
             imagesPreviews: Array.isArray(product.images) ? product.images : [],
             productPrice: product.productPrice || 0,
@@ -237,6 +240,14 @@ export default function ProductForm({
 
     if (errors.isCorporateGifts) {
       setErrors((prev) => ({ ...prev, isCorporateGifts: undefined }))
+    }
+  }
+
+  const handleProductCustomiseChange = (value: "yes" | "no") => {
+    setFormData({ ...formData, ProductCustomise: value })
+
+    if (errors.ProductCustomise) {
+      setErrors((prev) => ({ ...prev, ProductCustomise: undefined }))
     }
   }
 
@@ -423,6 +434,7 @@ export default function ProductForm({
         outOfStock: formData.outOfStock, // Include outOfStock in the data sent to Firebase
         isBestSell: formData.isBestSell, // Include isBestSell in the data sent to Firebase
         isCorporateGifts: formData.isCorporateGifts, // Include isCorporateGifts in the data sent to Firebase
+        ProductCustomise: formData.ProductCustomise, // Include ProductCustomise in the data sent to Firebase
         slug: formData.slug, // Include slug in the data sent to Firebase
         // Shipping details
         length: Number.parseFloat(formData.length || "0") || 0,
@@ -766,6 +778,30 @@ export default function ProductForm({
             </Select>
             {errors.isCorporateGifts && (
               <p className="text-red-500 text-sm">{errors.isCorporateGifts}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Product Customise
+            </label>
+            <Select
+              value={formData.ProductCustomise || "no"}
+              onValueChange={handleProductCustomiseChange}
+              disabled={isSubmitting}
+            >
+              <SelectTrigger
+                className={`w-full border rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.ProductCustomise ? "border-red-500" : "border-gray-300"
+                  }`}
+              >
+                <SelectValue placeholder="Select Product Customise" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="no">No</SelectItem>
+                <SelectItem value="yes">Yes</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.ProductCustomise && (
+              <p className="text-red-500 text-sm">{errors.ProductCustomise}</p>
             )}
           </div>
           <div className="space-y-2">

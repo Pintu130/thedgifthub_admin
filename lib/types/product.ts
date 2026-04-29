@@ -13,6 +13,7 @@ export interface Product {
   outOfStock: string
   isBestSell: string
   isCorporateGifts: string
+  ProductCustomise: string
   activity: number
   createdAt: string
   updatedAt: string
@@ -41,6 +42,7 @@ export interface ProductFormData {
   outOfStock: string
   isBestSell: string
   isCorporateGifts: string
+  ProductCustomise: string
   images: Array<File | string>
   imagesPreviews: string[]
   productPrice: number

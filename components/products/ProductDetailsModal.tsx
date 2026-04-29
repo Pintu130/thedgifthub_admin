@@ -125,6 +125,16 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
               />
             }
           />
+          <InfoRow
+            label="Product Customise"
+            value={
+              <Badge
+                active={product.ProductCustomise === "yes"}
+                activeLabel="Yes"
+                inactiveLabel="No"
+              />
+            }
+          />
           <InfoRow label="Category" value={categoryName} />
           <InfoRow
             label="Original Price"
