@@ -217,9 +217,28 @@ export const deleteUser = async (id: string): Promise<void> => {
       await Promise.all(user.image.map((imageUrl: string) => deleteCustomerImage(imageUrl)))
     }
 
-    // Delete the document
+    // Delete the document from Firestore
     const docRef = doc(db, COLLECTION_NAME, id)
     await deleteDoc(docRef)
+
+    // Delete user from Firebase Authentication
+    try {
+      const response = await fetch(`/api/users/${id}`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.warn("Warning: Could not delete user from Firebase Authentication:", errorData.error)
+        // Don't throw error here - the Firestore data is already deleted
+        // and we don't want to block the operation if Auth deletion fails
+      } else {
+        console.log(`User ${id} deleted from Firebase Authentication`)
+      }
+    } catch (authError) {
+      console.warn("Warning: Error calling Firebase Auth deletion API:", authError)
+      // Don't throw - the main data is already deleted
+    }
   } catch (error) {
     console.error("Error deleting user:", error)
     throw error

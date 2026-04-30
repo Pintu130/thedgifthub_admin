@@ -67,6 +67,7 @@ export async function POST(request: Request) {
       isBestSell: (formData.get("isBestSell") as string) || "no", // Added isBestSell field
       isCorporateGifts: (formData.get("isCorporateGifts") as string) || "no", // Added isCorporateGifts field
       ProductCustomise: (formData.get("ProductCustomise") as string) || "no", // Added ProductCustomise field
+      ProductCustomiseText: (formData.get("ProductCustomiseText") as string) || "", // Added ProductCustomiseText field
       slug: (formData.get("slug") as string) || "", // Added slug field
       activity: 1, // Default active
       // Shipping details
@@ -84,6 +85,12 @@ export async function POST(request: Request) {
     const imageFiles = formData.getAll("images") as File[]
     if (imageFiles && imageFiles.length > 0) {
       productData.images = imageFiles
+    }
+
+    // Handle ProductCustomiseImage upload
+    const ProductCustomiseImageFile = formData.get("ProductCustomiseImage") as File | null
+    if (ProductCustomiseImageFile && ProductCustomiseImageFile.size > 0) {
+      productData.ProductCustomiseImage = ProductCustomiseImageFile
     }
 
     // Basic validation

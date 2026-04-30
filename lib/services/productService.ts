@@ -11,6 +11,7 @@ import {
   startAfter,
   where,
   getDoc,
+  deleteField,
   type QueryConstraint,
 } from "firebase/firestore"
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage"
@@ -83,22 +84,39 @@ export const createProduct = async (productData: any): Promise<string> => {
     const imageUrls = await uploadProductImages(productData.images)
     console.log("Images uploaded successfully:", imageUrls)
 
+    // Upload ProductCustomiseImage if provided
+    let ProductCustomiseImageUrl = ""
+    if (productData.ProductCustomiseImage) {
+      if (typeof productData.ProductCustomiseImage === "string") {
+        ProductCustomiseImageUrl = productData.ProductCustomiseImage
+      } else if (productData.ProductCustomiseImage instanceof File) {
+        const timestamp = Date.now()
+        const fileName = `products/customise/${timestamp}_${productData.ProductCustomiseImage.name}`
+        const storageRef = ref(storage, fileName)
+        await uploadBytes(storageRef, productData.ProductCustomiseImage)
+        ProductCustomiseImageUrl = await getDownloadURL(storageRef)
+        console.log("ProductCustomiseImage uploaded successfully:", ProductCustomiseImageUrl)
+      }
+    }
+
     const product: Omit<Product, "id"> = {
       productName: productData.productName,
       productPrice: productData.productPrice,
       originalPrice: productData.originalPrice,
       discountPercentage: productData.discountPercentage,
-      categoryId: productData.categoryId, // 
+      categoryId: productData.categoryId, //
       images: imageUrls,
       availableOffers: productData.availableOffers,
       highlights: productData.highlights,
       description: productData.description,
       status: productData.status,
-      outOfStock: productData.outOfStock || "no", // 
-      isBestSell: productData.isBestSell || "no", // 
-      isCorporateGifts: productData.isCorporateGifts || "no", // 
-      ProductCustomise: productData.ProductCustomise || "no", // 
-      slug: productData.slug || "", // 
+      outOfStock: productData.outOfStock || "no", //
+      isBestSell: productData.isBestSell || "no", //
+      isCorporateGifts: productData.isCorporateGifts || "no", //
+      ProductCustomise: productData.ProductCustomise || "no", //
+      ProductCustomiseImage: ProductCustomiseImageUrl || undefined,
+      ProductCustomiseText: productData.ProductCustomiseText || undefined,
+      slug: productData.slug || "", //
       activity: productData.activity || 1,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -255,6 +273,7 @@ export const updateProduct = async (id: string, productData: any): Promise<void>
     // Get the existing product to track old images
     const existingProduct = await getProductById(id)
     const oldImageUrls = existingProduct?.images || []
+    const oldProductCustomiseImageUrl = existingProduct?.ProductCustomiseImage || ""
 
     // Handle image updates if new images are provided
     let imageUrls: string[] = []
@@ -274,21 +293,47 @@ export const updateProduct = async (id: string, productData: any): Promise<void>
       imageUrls = [...imageUrls, ...newImageUrls]
     }
 
-    const updateData: Partial<Product> = {
+    // Handle ProductCustomiseImage update
+    let ProductCustomiseImageUrl = oldProductCustomiseImageUrl
+    if (productData.ProductCustomiseImage) {
+      if (typeof productData.ProductCustomiseImage === "string") {
+        ProductCustomiseImageUrl = productData.ProductCustomiseImage
+      } else if (productData.ProductCustomiseImage instanceof File) {
+        // Delete old customise image if exists
+        if (oldProductCustomiseImageUrl) {
+          await deleteProductImage(oldProductCustomiseImageUrl).catch(console.error)
+        }
+        // Upload new customise image
+        const timestamp = Date.now()
+        const fileName = `products/customise/${timestamp}_${productData.ProductCustomiseImage.name}`
+        const storageRef = ref(storage, fileName)
+        await uploadBytes(storageRef, productData.ProductCustomiseImage)
+        ProductCustomiseImageUrl = await getDownloadURL(storageRef)
+        console.log("ProductCustomiseImage uploaded successfully:", ProductCustomiseImageUrl)
+      }
+    } else if (productData.ProductCustomiseImage === null || productData.ProductCustomiseImage === "") {
+      // If ProductCustomiseImage is explicitly null/empty, delete old image
+      if (oldProductCustomiseImageUrl) {
+        await deleteProductImage(oldProductCustomiseImageUrl).catch(console.error)
+      }
+      ProductCustomiseImageUrl = ""
+    }
+
+    const updateData: any = {
       productName: productData.productName,
       productPrice: productData.productPrice,
       originalPrice: productData.originalPrice,
       discountPercentage: productData.discountPercentage,
-      categoryId: productData.categoryId, // 
+      categoryId: productData.categoryId, //
       availableOffers: productData.availableOffers,
       highlights: productData.highlights,
       description: productData.description,
       status: productData.status,
-      outOfStock: productData.outOfStock || "no", // 
-      isBestSell: productData.isBestSell || "no", // 
-      isCorporateGifts: productData.isCorporateGifts || "no", // 
-      ProductCustomise: productData.ProductCustomise || "no", // 
-      slug: productData.slug || "", // 
+      outOfStock: productData.outOfStock || "no", //
+      isBestSell: productData.isBestSell || "no", //
+      isCorporateGifts: productData.isCorporateGifts || "no", //
+      ProductCustomise: productData.ProductCustomise || "no", //
+      slug: productData.slug || "", //
       activity: productData.activity || 1,
       images: imageUrls,
       updatedAt: new Date().toISOString(),
@@ -303,7 +348,22 @@ export const updateProduct = async (id: string, productData: any): Promise<void>
       metaDescription: productData.metaDescription || "",
     }
 
-    console.log("Updating product with data:", updateData) // 
+    // Handle ProductCustomiseImage and ProductCustomiseText based on ProductCustomise value
+    if (productData.ProductCustomise === "yes") {
+      // Only add these fields if ProductCustomise is "yes"
+      if (ProductCustomiseImageUrl) {
+        updateData.ProductCustomiseImage = ProductCustomiseImageUrl
+      }
+      if (productData.ProductCustomiseText) {
+        updateData.ProductCustomiseText = productData.ProductCustomiseText
+      }
+    } else {
+      // ProductCustomise is "no" - use deleteField to remove from Firestore
+      updateData.ProductCustomiseImage = deleteField()
+      updateData.ProductCustomiseText = deleteField()
+    }
+
+    console.log("Updating product with data:", updateData) //
 
     // Update the product in Firestore
     await updateDoc(docRef, updateData)
@@ -325,9 +385,15 @@ export const deleteProduct = async (id: string): Promise<void> => {
   try {
     // First get the product to delete its images
     const product = await getProductById(id)
-    if (product && product.images) {
+    if (product) {
       // Delete all images from storage
-      await Promise.all(product.images.map((imageUrl) => deleteProductImage(imageUrl)))
+      if (product.images) {
+        await Promise.all(product.images.map((imageUrl) => deleteProductImage(imageUrl)))
+      }
+      // Delete ProductCustomiseImage from storage
+      if (product.ProductCustomiseImage) {
+        await deleteProductImage(product.ProductCustomiseImage).catch(console.error)
+      }
     }
 
     // Delete the document

@@ -14,6 +14,8 @@ export interface Product {
   isBestSell: string
   isCorporateGifts: string
   ProductCustomise: string
+  ProductCustomiseImage?: string
+  ProductCustomiseText?: string
   activity: number
   createdAt: string
   updatedAt: string
@@ -43,6 +45,9 @@ export interface ProductFormData {
   isBestSell: string
   isCorporateGifts: string
   ProductCustomise: string
+  ProductCustomiseImage?: File | string
+  ProductCustomiseText?: string
+  ProductCustomiseImagePreview?: string
   images: Array<File | string>
   imagesPreviews: string[]
   productPrice: number

@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Product, ProductFormData } from "@/lib/types/product"
+import Modal from "@/components/common/Modal"
 
 interface FormErrors {
   name?: string
@@ -32,6 +33,7 @@ interface FormErrors {
   isBestSell?: string
   isCorporateGifts?: string
   ProductCustomise?: string
+  ProductCustomiseImage?: string
   // Shipping errors
   length?: string
   breadth?: string
@@ -80,6 +82,9 @@ export default function ProductForm({
     isBestSell: "no", // Add isBestSell field with default value
     isCorporateGifts: "no", // Add isCorporateGifts field with default value
     ProductCustomise: "no", // Add ProductCustomise field with default value
+    ProductCustomiseImage: undefined,
+    ProductCustomiseText: "",
+    ProductCustomiseImagePreview: undefined,
     images: [],
     imagesPreviews: [],
     productPrice: 0,
@@ -97,6 +102,11 @@ export default function ProductForm({
   })
   const [isLoading, setIsLoading] = useState(false)
   const imageInputRef = useRef<HTMLInputElement>(null)
+  const productCustomiseImageInputRef = useRef<HTMLInputElement>(null)
+
+  // Modal state for ProductCustomise confirmation
+  const [showProductCustomiseModal, setShowProductCustomiseModal] = useState(false)
+  const [pendingProductCustomiseValue, setPendingProductCustomiseValue] = useState<"yes" | "no" | null>(null)
 
   const isEditing = mode === "edit"
 
@@ -153,6 +163,9 @@ export default function ProductForm({
             isBestSell: product.isBestSell || "no", // Add isBestSell for edit mode
             isCorporateGifts: product.isCorporateGifts || "no", // Add isCorporateGifts for edit mode
             ProductCustomise: product.ProductCustomise || "no", // Add ProductCustomise for edit mode
+            ProductCustomiseImage: product.ProductCustomiseImage || undefined,
+            ProductCustomiseText: product.ProductCustomiseText || "",
+            ProductCustomiseImagePreview: product.ProductCustomiseImage || undefined,
             images: product.images || [],
             imagesPreviews: Array.isArray(product.images) ? product.images : [],
             productPrice: product.productPrice || 0,
@@ -244,11 +257,117 @@ export default function ProductForm({
   }
 
   const handleProductCustomiseChange = (value: "yes" | "no") => {
+    // Check if switching from "yes" to "no" and there's data to lose
+    if (formData.ProductCustomise === "yes" && value === "no") {
+      if (formData.ProductCustomiseImage || formData.ProductCustomiseText) {
+        // Show confirmation modal
+        setPendingProductCustomiseValue(value)
+        setShowProductCustomiseModal(true)
+        return
+      }
+    }
+
+    // Apply the change directly
     setFormData({ ...formData, ProductCustomise: value })
 
     if (errors.ProductCustomise) {
       setErrors((prev) => ({ ...prev, ProductCustomise: undefined }))
     }
+  }
+
+  const handleConfirmProductCustomiseChange = () => {
+    // Clear the image and text data
+    if (formData.ProductCustomiseImagePreview?.startsWith("blob:")) {
+      URL.revokeObjectURL(formData.ProductCustomiseImagePreview)
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      ProductCustomise: "no",
+      ProductCustomiseImage: undefined,
+      ProductCustomiseImagePreview: undefined,
+      ProductCustomiseText: "",
+    }))
+
+    setShowProductCustomiseModal(false)
+    setPendingProductCustomiseValue(null)
+
+    if (errors.ProductCustomise) {
+      setErrors((prev) => ({ ...prev, ProductCustomise: undefined }))
+    }
+
+    if (errors.ProductCustomiseImage) {
+      setErrors((prev) => ({ ...prev, ProductCustomiseImage: undefined }))
+    }
+  }
+
+  const handleCancelProductCustomiseChange = () => {
+    // Keep "yes" selected, close modal
+    setShowProductCustomiseModal(false)
+    setPendingProductCustomiseValue(null)
+  }
+
+  const handleProductCustomiseImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return
+
+    const file = e.target.files[0]
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast({
+        variant: "destructive",
+        title: "Invalid file type",
+        description: "Only image files are allowed.",
+      })
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        variant: "destructive",
+        title: "File too large",
+        description: "Image must be smaller than 5MB.",
+      })
+      return
+    }
+
+    // Revoke previous blob URL if exists
+    if (formData.ProductCustomiseImagePreview?.startsWith("blob:")) {
+      URL.revokeObjectURL(formData.ProductCustomiseImagePreview)
+    }
+
+    const previewUrl = URL.createObjectURL(file)
+    setFormData((prev) => ({
+      ...prev,
+      ProductCustomiseImage: file,
+      ProductCustomiseImagePreview: previewUrl,
+    }))
+
+    // Clear the input so the same file can be selected again
+    if (productCustomiseImageInputRef.current) {
+      productCustomiseImageInputRef.current.value = ""
+    }
+
+    // Clear the error if exists
+    if (errors.ProductCustomiseImage) {
+      setErrors((prev) => ({ ...prev, ProductCustomiseImage: undefined }))
+    }
+  }
+
+  const removeProductCustomiseImage = () => {
+    if (formData.ProductCustomiseImagePreview?.startsWith("blob:")) {
+      URL.revokeObjectURL(formData.ProductCustomiseImagePreview)
+    }
+    setFormData((prev) => ({
+      ...prev,
+      ProductCustomiseImage: undefined,
+      ProductCustomiseImagePreview: undefined,
+    }))
+  }
+
+  const handleProductCustomiseTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setFormData({ ...formData, ProductCustomiseText: e.target.value })
   }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -405,6 +524,11 @@ export default function ProductForm({
       newErrors.images = "Minimum 2 images are required"
     }
 
+    // Validate ProductCustomiseImage is required when ProductCustomise is "yes"
+    if (formData.ProductCustomise === "yes" && !formData.ProductCustomiseImage) {
+      newErrors.ProductCustomiseImage = "Product Customise Image is required when Product Customise is Yes"
+    }
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -435,6 +559,7 @@ export default function ProductForm({
         isBestSell: formData.isBestSell, // Include isBestSell in the data sent to Firebase
         isCorporateGifts: formData.isCorporateGifts, // Include isCorporateGifts in the data sent to Firebase
         ProductCustomise: formData.ProductCustomise, // Include ProductCustomise in the data sent to Firebase
+        ProductCustomiseText: formData.ProductCustomiseText || "", // Include ProductCustomiseText
         slug: formData.slug, // Include slug in the data sent to Firebase
         // Shipping details
         length: Number.parseFloat(formData.length || "0") || 0,
@@ -478,6 +603,25 @@ export default function ProductForm({
         formDataToSend.append("images", file)
       })
 
+      // Handle ProductCustomiseImage - separate existing URL from new file
+      if (formData.ProductCustomise === "yes") {
+        // Only send image if ProductCustomise is "yes"
+        if (formData.ProductCustomiseImage) {
+          if (typeof formData.ProductCustomiseImage === "string") {
+            // This is an existing image URL
+            formDataToSend.append("ProductCustomiseImage", formData.ProductCustomiseImage)
+          } else if (formData.ProductCustomiseImage instanceof File) {
+            // This is a new file to upload
+            formDataToSend.append("ProductCustomiseImage", formData.ProductCustomiseImage)
+          }
+        }
+      } else {
+        // ProductCustomise is "no" - send empty string to trigger deletion
+        formDataToSend.append("ProductCustomiseImage", "")
+        // Also clear the text
+        formDataToSend.set("ProductCustomiseText", "")
+      }
+
       let response: Response
       let url = "/api/products"
       let method = "POST"
@@ -510,6 +654,9 @@ export default function ProductForm({
           }
         })
       }
+      if (formData.ProductCustomiseImagePreview?.startsWith("blob:")) {
+        URL.revokeObjectURL(formData.ProductCustomiseImagePreview)
+      }
 
       onSuccess()
     } catch (error: any) {
@@ -532,8 +679,11 @@ export default function ProductForm({
           }
         })
       }
+      if (formData.ProductCustomiseImagePreview?.startsWith("blob:")) {
+        URL.revokeObjectURL(formData.ProductCustomiseImagePreview)
+      }
     }
-  }, [formData.imagesPreviews])
+  }, [formData.imagesPreviews, formData.ProductCustomiseImagePreview])
 
   if (isLoading) {
     return (
@@ -780,6 +930,30 @@ export default function ProductForm({
               <p className="text-red-500 text-sm">{errors.isCorporateGifts}</p>
             )}
           </div>
+           <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Status <span className="text-red-500">*</span>
+            </label>
+            <Select
+              value={formData.status || "active"}
+              onValueChange={handleStatusChange}
+              disabled={isSubmitting}
+            >
+              <SelectTrigger
+                className={`w-full border rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.status ? "border-red-500" : "border-gray-300"
+                  }`}
+              >
+                <SelectValue placeholder="Select Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.status && (
+              <p className="text-red-500 text-sm">{errors.status}</p>
+            )}
+          </div>
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
               Product Customise
@@ -804,30 +978,71 @@ export default function ProductForm({
               <p className="text-red-500 text-sm">{errors.ProductCustomise}</p>
             )}
           </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Status <span className="text-red-500">*</span>
-            </label>
-            <Select
-              value={formData.status || "active"}
-              onValueChange={handleStatusChange}
-              disabled={isSubmitting}
-            >
-              <SelectTrigger
-                className={`w-full border rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.status ? "border-red-500" : "border-gray-300"
-                  }`}
-              >
-                <SelectValue placeholder="Select Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.status && (
-              <p className="text-red-500 text-sm">{errors.status}</p>
-            )}
-          </div>
+
+          {/* Product Customise Image and Text - Only show when ProductCustomise is "yes" */}
+          {formData.ProductCustomise === "yes" && (
+            <div className="col-span-2 sm:col-span-2 lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Product Customise Image <span className="text-red-500">*</span>
+                </label>
+                <div className="flex flex-col gap-2">
+                  {formData.ProductCustomiseImagePreview ? (
+                    <div className="relative w-32 h-32">
+                      <img
+                        src={formData.ProductCustomiseImagePreview}
+                        alt="Product Customise"
+                        className="w-full h-full object-cover rounded-lg border"
+                      />
+                      <button
+                        type="button"
+                        onClick={removeProductCustomiseImage}
+                        disabled={isSubmitting}
+                        className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => document.getElementById("productCustomiseImageInput")?.click()}
+                      className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-gray-50 transition-colors"
+                    >
+                      <Plus className="w-8 h-8 text-gray-400" />
+                      <span className="text-xs text-gray-500 mt-1">Upload Image</span>
+                    </div>
+                  )}
+                  <input
+                    id="productCustomiseImageInput"
+                    ref={productCustomiseImageInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleProductCustomiseImageChange}
+                    disabled={isSubmitting}
+                    className="hidden"
+                  />
+                </div>
+                <p className="text-xs text-gray-500">Max 1 image, only image files allowed (max 5MB)</p>
+                {errors.ProductCustomiseImage && (
+                  <p className="text-red-500 text-sm">{errors.ProductCustomiseImage}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Product Customise Text <span className="text-gray-400">(Optional)</span>
+                </label>
+                <textarea
+                  value={formData.ProductCustomiseText || ""}
+                  onChange={handleProductCustomiseTextChange}
+                  placeholder="Enter customise text..."
+                  disabled={isSubmitting}
+                  className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y h-24"
+                />
+              </div>
+            </div>
+          )}
+
         </div>
 
         {/* Description */}
@@ -979,7 +1194,7 @@ export default function ProductForm({
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="px-4 py-2 rounded-md bg-gradient-to-r 
+            className="px-4 py-2 rounded-md bg-gradient-to-r
               from-customButton-gradientFrom
               to-customButton-gradientTo
               text-customButton-text
@@ -989,6 +1204,18 @@ export default function ProductForm({
             {isSubmitting ? "Saving..." : (isEditing ? "Update Product" : "Save Product")}
           </Button>
         </div>
+
+        {/* Confirmation Modal for ProductCustomise change */}
+        <Modal
+          isOpen={showProductCustomiseModal}
+          onClose={handleCancelProductCustomiseChange}
+          onConfirm={handleConfirmProductCustomiseChange}
+          title="Remove Product Customise Data?"
+          message="Changing 'Product Customise' to 'No' will remove the uploaded image and text. This action cannot be undone. Are you sure?"
+          confirmLabel="Yes, Remove"
+          closeLabel="Cancel"
+          confirmVariant="destructive"
+        />
       </CardContent>
     </Card>
   )

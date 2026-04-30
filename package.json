@@ -55,6 +55,7 @@
     "embla-carousel-react": "8.5.1",
     "file-saver": "^2.0.5",
     "firebase": "^12.2.1",
+    "firebase-admin": "^13.8.0",
     "input-otp": "1.4.1",
     "jszip": "^3.10.1",
     "lodash.debounce": "^4.0.8",

@@ -10,7 +10,9 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Loader2, Lock, Mail } from "lucide-react"
 import Loader from "./loading-screen"
-import { signIn } from "@/lib/firebase-auth"
+import { signIn, signOut, getCurrentUser } from "@/lib/firebase-auth"
+
+const ALLOWED_ADMIN_UID = process.env.NEXT_PUBLIC_ADMIN_UID || "IdCnFd3ZtxUTV60r4N0YGc9ytNF3"
 
 export function LoginForm() {
   const [email, setEmail] = useState("")
@@ -48,6 +50,21 @@ export function LoginForm() {
 
     try {
       await signIn(email, password)
+
+      // Check if logged in user is the allowed admin
+      const currentUser = getCurrentUser()
+      if (!currentUser || currentUser.uid !== ALLOWED_ADMIN_UID) {
+        // Not authorized - sign out and show error
+        await signOut()
+        toast({
+          variant: "destructive",
+          title: "Access Denied",
+          description: "You have no access to login",
+        })
+        setIsLoading(false)
+        return
+      }
+
       toast({
         title: "Login successful",
         description: "Welcome back!",
