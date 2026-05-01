@@ -10,8 +10,12 @@ export async function GET() {
     
     // Test Firestore connection
     if (db) {
-      const testCollection = await db.listCollections()
-      console.log("Firestore collections:", testCollection.length)
+      try {
+        const testQuery = await db.collection('products').limit(1).get()
+        console.log("Firestore products collection test:", testQuery.size)
+      } catch (firestoreError) {
+        console.error("Firestore test error:", firestoreError)
+      }
     }
     
     return NextResponse.json({
