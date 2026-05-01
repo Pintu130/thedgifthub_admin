@@ -363,7 +363,7 @@ export const updateProduct = async (id: string, productData: any): Promise<void>
       updateData.ProductCustomiseText = deleteField()
     }
 
-    console.log("Updating product with data:", updateData) //
+    console.log("Updating product with data:111", updateData) //
 
     // Update the product in Firestore
     await updateDoc(docRef, updateData)
