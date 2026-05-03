@@ -172,12 +172,12 @@ export function DashboardSidebar({ onNavClick }: DashboardSidebarProps) {
       href: "/orders",
       active: pathname === "/orders",
     },
-    {
-      label: "Product Print",
-      icon: FileText,
-      href: "/product-print",
-      active: pathname === "/product-print",
-    },
+    // {
+    //   label: "Product Print",
+    //   icon: FileText,
+    //   href: "/product-print",
+    //   active: pathname === "/product-print",
+    // },
  
     // {
     //   label: "Order Shipping", // Page title
