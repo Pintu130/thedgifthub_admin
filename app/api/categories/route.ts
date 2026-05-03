@@ -1,5 +1,26 @@
 import { NextResponse } from 'next/server';
-import { getCategories, addCategory, getCategoriesByCategory, getAllCategories, getCategoriesByStatus } from '@/lib/services/categoryService';
+import { adminDb } from '@/lib/firebase-admin';
+import * as categoryAdmin from '@/lib/services/categoryServiceAdmin';
+import * as categoryClient from '@/lib/services/categoryService';
+
+const categoryApi = adminDb ? categoryAdmin : categoryClient;
+
+if (!adminDb && process.env.NODE_ENV === 'production') {
+  console.warn(
+    '[api/categories] Firebase Admin credentials missing — using client SDK. Set FIREBASE_CLIENT_EMAIL + FIREBASE_PRIVATE_KEY so category APIs work with production Firestore rules.',
+  );
+}
+
+export const dynamic = 'force-dynamic';
+
+const noStoreJson = (body: unknown, init?: ResponseInit) =>
+  NextResponse.json(body, {
+    ...init,
+    headers: {
+      'Cache-Control': 'private, no-store, must-revalidate',
+      ...init?.headers,
+    },
+  });
 
 export async function GET(request: Request) {
   try {
@@ -15,7 +36,7 @@ export async function GET(request: Request) {
     if (categoryFilter && categoryFilter !== '') {
       // If specific category is requested by ID, get that category
       console.log('Fetching specific category by ID');
-      categories = await getCategoriesByCategory(categoryFilter);
+      categories = await categoryApi.getCategoriesByCategory(categoryFilter);
     } else if (statusFilter && statusFilter !== '') {
       // If status filter is provided, use dedicated status function
       console.log('Fetching categories by status:', statusFilter);
@@ -28,15 +49,15 @@ export async function GET(request: Request) {
         );
       }
       
-      categories = await getCategoriesByStatus(statusFilter);
+      categories = await categoryApi.getCategoriesByStatus(statusFilter);
     } else {
       // Get all categories without any filter
       console.log('Fetching all categories');
-      categories = await getAllCategories();
+      categories = await categoryApi.getAllCategories();
     }
     
     console.log('API - Returning categories:', categories.length, 'items');
-    return NextResponse.json(categories);
+    return noStoreJson(categories);
   } catch (error) {
     console.error('Error fetching categories:', error);
     return NextResponse.json(
@@ -70,7 +91,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const categoryId = await addCategory({ 
+    const categoryId = await categoryApi.addCategory({ 
       name, 
       imageUrl: '', 
       status: status as 'active' | 'inactive',

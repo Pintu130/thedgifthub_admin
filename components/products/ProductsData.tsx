@@ -69,10 +69,14 @@ const ProductData = () => {
     setIsError(false)
     try {
       const queryParams = new URLSearchParams()
+      queryParams.append("limit", "500")
+      queryParams.append("page", "1")
       if (selectedCategory) queryParams.append("categoryId", selectedCategory)
       if (selectedStatus) queryParams.append("status", selectedStatus) // Add status filter
 
-      const response = await fetch(`/api/products?${queryParams.toString()}`)
+      const response = await fetch(`/api/products?${queryParams.toString()}`, {
+        cache: "no-store",
+      })
       if (!response.ok) throw new Error("Failed to fetch products")
       const { data } = await response.json()
       setProducts(data || [])
@@ -140,6 +144,7 @@ const ProductData = () => {
     try {
       const response = await fetch(`/api/products/${productToDelete.id}`, {
         method: "DELETE",
+        cache: "no-store",
       })
       if (!response.ok) throw new Error("Failed to delete product")
 
@@ -147,7 +152,7 @@ const ProductData = () => {
         title: "Success",
         description: "Product deleted successfully",
       })
-      fetchProducts()
+      await fetchProducts()
       closeDeleteModal()
     } catch (error) {
       console.error("Error deleting product:", error)
@@ -164,7 +169,7 @@ const ProductData = () => {
   // Fetch categories
   const fetchCategories = useCallback(async () => {
     try {
-      const response = await fetch('/api/categories')
+      const response = await fetch("/api/categories", { cache: "no-store" })
       if (!response.ok) {
         throw new Error('Failed to fetch categories')
       }
@@ -477,6 +482,7 @@ const ProductData = () => {
               <AgGridReact
                 ref={gridRef}
                 rowData={products}
+                getRowId={(params) => String(params.data?.id ?? "")}
                 columnDefs={columnDefs}
                 defaultColDef={{
                   resizable: true,

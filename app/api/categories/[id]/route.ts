@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
-import { updateCategory, deleteCategory } from '@/lib/services/categoryService';
+import { adminDb } from '@/lib/firebase-admin';
+import * as categoryAdmin from '@/lib/services/categoryServiceAdmin';
+import * as categoryClient from '@/lib/services/categoryService';
+
+const categoryApi = adminDb ? categoryAdmin : categoryClient;
 
 // PUT /api/categories/[id]
 export async function PUT(
@@ -35,7 +39,7 @@ export async function PUT(
     const { searchParams } = new URL(request.url);
     const oldImageUrl = searchParams.get('oldImageUrl') || undefined;
 
-    await updateCategory(
+    await categoryApi.updateCategory(
       id, 
       { 
         name, 
@@ -75,7 +79,7 @@ export async function DELETE(
       );
     }
 
-    await deleteCategory(id, imageUrl);
+    await categoryApi.deleteCategory(id, imageUrl);
 
     return NextResponse.json({
       message: 'Category deleted successfully'

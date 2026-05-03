@@ -1,14 +1,24 @@
 import { NextResponse } from "next/server"
-import { getProductById, updateProduct, deleteProduct, uploadProductImages } from "@/lib/services/productService"
+import { adminDb } from "@/lib/firebase-admin"
+import * as productAdmin from "@/lib/services/productServiceAdmin"
+import * as productClient from "@/lib/services/productService"
+
+const productApi = adminDb ? productAdmin : productClient
+
+export const dynamic = "force-dynamic"
 
 // GET /api/products/[id]
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
-    const product = await getProductById(params.id)
+    const product = await productApi.getProductById(params.id)
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 })
     }
-    return NextResponse.json(product)
+    return NextResponse.json(product, {
+      headers: {
+        "Cache-Control": "private, no-store, must-revalidate",
+      },
+    })
   } catch (error) {
     console.error("Error fetching product:", error)
     return NextResponse.json({ error: "Failed to fetch product" }, { status: 500 })
@@ -72,7 +82,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     // Only process if there are new files to upload
     if (newImageFiles.length > 0) {
       // Upload new images and get their URLs
-      const uploadedImageUrls = await uploadProductImages(newImageFiles)
+      const uploadedImageUrls = await productApi.uploadProductImages(newImageFiles)
       productData.images = [...existingImages, ...uploadedImageUrls]
     } else {
       productData.images = existingImages
@@ -93,7 +103,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       productData.ProductCustomiseImage = ""
     }
 
-    await updateProduct(params.id, productData)
+    await productApi.updateProduct(params.id, productData)
 
     return NextResponse.json({
       success: true,
@@ -115,12 +125,12 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 // DELETE /api/products/[id]
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
-    const product = await getProductById(params.id)
+    const product = await productApi.getProductById(params.id)
     if (!product) {
       return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 })
     }
 
-    await deleteProduct(params.id)
+    await productApi.deleteProduct(params.id)
 
     return NextResponse.json({
       success: true,

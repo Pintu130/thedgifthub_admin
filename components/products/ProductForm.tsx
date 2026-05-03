@@ -114,7 +114,7 @@ export default function ProductForm({
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch('/api/categories')
+        const response = await fetch("/api/categories", { cache: "no-store" })
         if (!response.ok) {
           throw new Error('Failed to fetch categories')
         }
@@ -143,7 +143,7 @@ export default function ProductForm({
       const fetchProduct = async () => {
         setIsLoading(true)
         try {
-          const response = await fetch(`/api/products/${productId}`)
+          const response = await fetch(`/api/products/${productId}`, { cache: "no-store" })
           if (!response.ok) {
             throw new Error('Failed to fetch product')
           }
@@ -634,6 +634,7 @@ export default function ProductForm({
       response = await fetch(url, {
         method,
         body: formDataToSend,
+        cache: "no-store",
       })
 
       if (!response.ok) {

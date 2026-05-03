@@ -9,7 +9,7 @@ const AddProductPage = () => {
   const router = useRouter()
 
   const handleSuccess = () => {
-    router.push('/products')
+    router.push("/products")
   }
 
   const handleCancel = () => {

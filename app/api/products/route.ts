@@ -1,6 +1,27 @@
 import { NextResponse } from "next/server"
-import { getProducts, createProduct } from "@/lib/services/productService"
+import { adminDb } from "@/lib/firebase-admin"
+import * as productAdmin from "@/lib/services/productServiceAdmin"
+import * as productClient from "@/lib/services/productService"
 import type { PaginationParams } from "@/lib/types/product"
+
+const productApi = adminDb ? productAdmin : productClient
+
+if (!adminDb && process.env.NODE_ENV === "production") {
+  console.warn(
+    "[api/products] Firebase Admin credentials missing — using client SDK. Set FIREBASE_CLIENT_EMAIL + FIREBASE_PRIVATE_KEY (+ FIREBASE_PROJECT_ID) so APIs read Firestore reliably in production.",
+  )
+}
+
+export const dynamic = "force-dynamic"
+
+const noStoreJson = (body: unknown, init?: ResponseInit) =>
+  NextResponse.json(body, {
+    ...init,
+    headers: {
+      "Cache-Control": "private, no-store, must-revalidate",
+      ...init?.headers,
+    },
+  })
 
 // GET /api/products
 export async function GET(request: Request) {
@@ -14,7 +35,7 @@ export async function GET(request: Request) {
     const categoryId = searchParams.get("categoryId") || "" // ✅ existing
     const status = searchParams.get("status") || "" // ✅ new status filter
 
-    const result = await getProducts({
+    const result = await productApi.getProducts({
       page,
       limit,
       search,
@@ -24,7 +45,7 @@ export async function GET(request: Request) {
       status, // ✅ pass status filter to service
     } as PaginationParams & { categoryId?: string; status?: string })
 
-    return NextResponse.json({
+    return noStoreJson({
       success: true,
       data: result.data,
       pagination: {
@@ -125,7 +146,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const productId = await createProduct(productData)
+    const productId = await productApi.createProduct(productData)
 
     return NextResponse.json(
       {
